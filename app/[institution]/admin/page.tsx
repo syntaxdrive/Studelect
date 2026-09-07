@@ -28,6 +28,7 @@ import {
   ElectionRulesState,
 } from "@/app/actions/student-register";
 import { getInstitutionBySlug } from "@/lib/db/institutions";
+import { updateOrgLogoAction } from "@/app/actions/elections";
 import {
   parseExcelOrCsvFile,
   exportVoterRegisterToExcel,
@@ -268,13 +269,51 @@ export default function InstitutionAdminPage({
 
   useEffect(() => {
     loadVoterRoll();
+    try {
+      const cached = localStorage.getItem(`studelect_org_logo_${instSlug}`);
+      if (cached) setOrgLogoUrl(cached);
+    } catch (_) {}
     getInstitutionBySlug(instSlug).then((inst) => {
       if (inst?.logoUrl) {
-        setOrgLogoUrl(inst.logoUrl);
+        setOrgLogoUrl((prev) => prev || inst.logoUrl);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instSlug]);
+
+  // ── Organization DP / Logo Upload Handler ──────────────────────────────────
+  const handleOrgLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2.5 * 1024 * 1024) {
+      setAdminActionMessage("Image must be smaller than 2.5MB.");
+      setTimeout(() => setAdminActionMessage(null), 4000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      if (typeof reader.result === "string") {
+        const dataUrl = reader.result as string;
+        setOrgLogoUrl(dataUrl);
+        try {
+          localStorage.setItem(`studelect_org_logo_${instSlug}`, dataUrl);
+        } catch (_) {}
+
+        setAdminActionMessage("Updating organization DP / display picture...");
+        const res = await updateOrgLogoAction(instSlug, dataUrl);
+        if (res && res.success) {
+          setAdminActionMessage("Organization DP updated successfully!");
+        } else {
+          setAdminActionMessage("Organization DP updated locally.");
+        }
+        setTimeout(() => setAdminActionMessage(null), 5000);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
   // ── Voter Management Handlers ───────────────────────────────────────────────
   const handleToggleDues = async (studentId: string, current: boolean) => {
@@ -711,11 +750,26 @@ export default function InstitutionAdminPage({
       {/* Header */}
       <div className="border-b border-zinc-200 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <img
-            src={orgLogoUrl || `/logos/${instSlug}.svg`}
-            alt="Org Logo"
-            className="w-12 h-12 object-contain rounded-xl bg-white border border-zinc-200 p-1 shadow-xs flex-shrink-0"
-          />
+          <div className="relative group flex-shrink-0 cursor-pointer">
+            <img
+              src={orgLogoUrl || `/logos/${instSlug}.svg`}
+              alt="Org DP"
+              className="w-14 h-14 object-contain rounded-xl bg-white border border-zinc-200 p-1 shadow-xs transition group-hover:border-zinc-400"
+            />
+            <label
+              title="Click to upload Organization DP / Logo"
+              className="absolute inset-0 bg-black/60 rounded-xl opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center cursor-pointer text-white"
+            >
+              <Upload className="w-3.5 h-3.5 mb-0.5" />
+              <span className="text-[8px] font-bold uppercase tracking-wider">Change DP</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleOrgLogoUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
           <div>
             <Link
               href={`/${instSlug}`}
@@ -739,6 +793,17 @@ export default function InstitutionAdminPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <label className="px-3.5 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-100 text-zinc-700 text-xs font-semibold cursor-pointer transition flex items-center gap-1.5 shadow-xs">
+            <ImageIcon className="w-3.5 h-3.5 text-zinc-600" />
+            <span>Upload Org DP</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleOrgLogoUpload}
+              className="hidden"
+            />
+          </label>
+
           <Link
             href={`/${instSlug}/admin/create`}
             className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
@@ -2363,6 +2428,38 @@ export default function InstitutionAdminPage({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Organization Display Picture / Logo */}
+            <div className="p-5 rounded-2xl bg-white border border-zinc-200 shadow-xs space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="relative w-12 h-12 rounded-xl bg-zinc-100 border border-zinc-200 flex-shrink-0 flex items-center justify-center overflow-hidden shadow-2xs">
+                    <img
+                      src={orgLogoUrl || `/logos/${instSlug}.svg`}
+                      alt="Org DP"
+                      className="w-full h-full object-contain p-1"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-zinc-900 text-sm">Organization Display Picture (DP)</h3>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      Upload your official departmental or faculty crest/logo. This appears on student voter booths and the ELCOM desk.
+                    </p>
+                  </div>
+                </div>
+
+                <label className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs transition cursor-pointer flex items-center gap-1.5 shadow-xs flex-shrink-0">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload DP</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleOrgLogoUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+
             {/* Rule 1: Dues Payment Toggle */}
             <div className="p-5 rounded-2xl bg-white border border-zinc-200 shadow-xs space-y-4">
               <div className="flex items-start justify-between gap-4">

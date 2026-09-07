@@ -21,12 +21,27 @@
     "orgSlug": "nesa",
     "orgName": "Nigerian Economics Students' Association (NESA)",
     "orgType": "FACULTY",
-    "voterQuota": 3000,
-    "licenseStatus": "PENDING_PAYMENT",
+    "voterQuota": 4250,
+    "licenseStatus": "ACTIVE",
     "paymentPlan": "FACULTY_3000",
     "agreedAmountNgn": 75000,
-    "registeredVotersCount": 5,
+    "registeredVotersCount": 7,
     "ballotsCastCount": 0,
-    "lastActivatedAt": "2026-09-07T14:57:44.298Z"
+    "lastActivatedAt": "2026-09-07T15:54:51.797Z"
+  },
+  {
+    "id": "org-ui-sug",
+    "institutionSlug": "ui",
+    "institutionName": "University of Ibadan",
+    "orgSlug": "sug",
+    "orgName": "University of Ibadan Students' Union (UISU)",
+    "orgType": "SUG",
+    "voterQuota": 500,
+    "licenseStatus": "PENDING_PAYMENT",
+    "paymentPlan": "SUG_UNLIMITED",
+    "agreedAmountNgn": 250000,
+    "registeredVotersCount": 7,
+    "ballotsCastCount": 0,
+    "lastActivatedAt": "2026-08-29T20:55:00.010664+00:00"
   }
 ]

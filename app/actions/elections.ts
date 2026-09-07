@@ -106,3 +106,46 @@ export async function createElectionAction(input: CreateElectionInput) {
     };
   }
 }
+
+/**
+ * Update the organization display picture (DP) / logo
+ */
+export async function updateOrgLogoAction(
+  institutionSlug: string,
+  logoUrl: string,
+  orgSlug?: string
+) {
+  try {
+    const cleanInst = (institutionSlug || "ui").toLowerCase().trim();
+    const instId = `inst-${cleanInst}`;
+
+    // Update institution logo
+    await supabase
+      .from("institutions")
+      .update({ logo_url: logoUrl })
+      .eq("slug", cleanInst);
+
+    // If orgSlug provided, also update organizations table
+    if (orgSlug) {
+      const cleanOrg = orgSlug.toLowerCase().trim();
+      await supabase
+        .from("organizations")
+        .update({ logo_url: logoUrl })
+        .eq("institution_id", instId)
+        .eq("slug", cleanOrg);
+    }
+
+    revalidatePath(`/${cleanInst}/admin`);
+    revalidatePath(`/${cleanInst}`);
+
+    return {
+      success: true,
+      logoUrl,
+      message: "Organization DP updated successfully.",
+    };
+  } catch (err: any) {
+    console.error("updateOrgLogoAction error:", err);
+    return { success: false, message: err.message };
+  }
+}
+
