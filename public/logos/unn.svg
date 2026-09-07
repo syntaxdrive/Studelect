@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <!-- University of Nigeria, Nsukka (UNN) Official Crest -->
+  <defs>
+    <linearGradient id="unnGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#006633" />
+      <stop offset="100%" stop-color="#004422" />
+    </linearGradient>
+    <linearGradient id="unnGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700" />
+      <stop offset="100%" stop-color="#DAA520" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Ring -->
+  <circle cx="100" cy="100" r="94" fill="none" stroke="url(#unnGreen)" stroke-width="4" />
+  <circle cx="100" cy="100" r="88" fill="#FFFFFF" stroke="url(#unnGold)" stroke-width="1.5" />
+
+  <!-- Inner Dark Green Center -->
+  <circle cx="100" cy="100" r="62" fill="url(#unnGreen)" />
+
+  <!-- The Great Nsukka Roaring Lion Symbol -->
+  <path d="M 85 85 C 80 75 90 70 100 70 C 110 70 120 75 115 85 C 125 90 125 105 115 115 C 105 125 95 125 85 115 C 75 105 75 90 85 85 Z" fill="url(#unnGold)" />
+  <circle cx="95" cy="85" r="2.5" fill="#004422" />
+  <circle cx="105" cy="85" r="2.5" fill="#004422" />
+  <polygon points="100,90 96,96 104,96" fill="#004422" />
+  <path d="M 94 102 Q 100 106 106 102" fill="none" stroke="#004422" stroke-width="2" stroke-linecap="round" />
+  <path d="M 88 120 L 100 132 L 112 120" fill="none" stroke="url(#unnGold)" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Text -->
+  <text x="100" y="27" font-family="Arial, sans-serif" font-size="9.5" font-weight="bold" fill="#006633" text-anchor="middle" letter-spacing="1">UNIVERSITY OF NIGERIA</text>
+  <text x="100" y="184" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#006633" text-anchor="middle" letter-spacing="0.5">TO RESTORE THE DIGNITY OF MAN</text>
+</svg>

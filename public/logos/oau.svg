@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <!-- Obafemi Awolowo University (OAU) Official Crest -->
+  <defs>
+    <linearGradient id="oauBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#002147" />
+      <stop offset="100%" stop-color="#001126" />
+    </linearGradient>
+    <linearGradient id="oauBronze" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#CD7F32" />
+      <stop offset="100%" stop-color="#8C531B" />
+    </linearGradient>
+    <linearGradient id="oauGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700" />
+      <stop offset="100%" stop-color="#D4AF37" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Ring -->
+  <circle cx="100" cy="100" r="94" fill="none" stroke="url(#oauGold)" stroke-width="4" />
+  <circle cx="100" cy="100" r="88" fill="url(#oauBlue)" />
+
+  <!-- Shield -->
+  <path d="M 65 58 L 135 58 C 135 95 135 120 100 148 C 65 120 65 95 65 58 Z" fill="#FFFFFF" stroke="url(#oauGold)" stroke-width="2.5" />
+  <path d="M 68 61 L 132 61 C 132 92 132 116 100 144 C 68 116 68 92 68 61 Z" fill="#002147" />
+
+  <!-- The Legendary Ife Bronze Head / Olokun Symbol -->
+  <ellipse cx="100" cy="85" rx="14" ry="17" fill="url(#oauBronze)" />
+  <rect x="94" y="68" width="12" height="7" rx="2" fill="url(#oauGold)" />
+  <circle cx="96" cy="83" r="1.5" fill="#FFFFFF" />
+  <circle cx="104" cy="83" r="1.5" fill="#FFFFFF" />
+  <path d="M 97 93 Q 100 96 103 93" fill="none" stroke="#001126" stroke-width="1.5" />
+
+  <!-- Open Book of Learning and Culture -->
+  <path d="M 80 110 Q 100 105 100 115 Q 100 105 120 110 L 120 124 Q 100 119 100 128 Q 100 119 80 124 Z" fill="#FFFFFF" stroke="#333333" stroke-width="1" />
+
+  <!-- Text -->
+  <text x="100" y="32" font-family="Arial, sans-serif" font-size="8.8" font-weight="bold" fill="url(#oauGold)" text-anchor="middle" letter-spacing="0.8">OBAFEMI AWOLOWO UNIV</text>
+  <text x="100" y="178" font-family="Arial, sans-serif" font-size="7.8" font-weight="bold" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">FOR LEARNING AND CULTURE</text>
+</svg>

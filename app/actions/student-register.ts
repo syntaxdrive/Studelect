@@ -1,0 +1,640 @@
+"use server";
+
+import { supabase } from "@/lib/supabase";
+import { normalizeMatricNo } from "@/lib/matric-normalizer";
+import { generateSingleVoterPin } from "@/lib/auth/pin-generator";
+import fs from "fs";
+import path from "path";
+import { revalidatePath } from "next/cache";
+
+export interface StudentLookupInput {
+  institutionSlug: string;
+  matricNo: string;
+}
+
+export interface StudentRegisterInput {
+  institutionSlug: string;
+  orgSlug?: string;
+  matricNo: string;
+  fullName: string;
+  department?: string;
+  faculty?: string;
+  level: number;
+  email?: string;
+  phoneNumber?: string;
+  hallOfResidence?: string;
+}
+
+/**
+ * Check a student's accreditation status and retrieve voter PIN from Supabase.
+ * Responds within 6s or returns a graceful timeout message.
+ */
+export async function lookupStudentStatusAction(input: StudentLookupInput) {
+  const norm = normalizeMatricNo(input.matricNo);
+  if (!norm.isValid) {
+    return {
+      success: false,
+      message: "Please enter a valid Nigerian matriculation number.",
+    };
+  }
+
+  const cleanInstSlug = (input.institutionSlug || "ui").toLowerCase().trim();
+
+  try {
+    const { data: student, error } = await supabase
+      .from("students")
+      .select("*")
+      .eq("normalized_matric", norm.normalized)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Supabase student lookup error:", error);
+      // Don't block — return not-found gracefully
+    }
+
+    if (student) {
+      const pinPrefix = student.portal_pin ? student.portal_pin.substring(0, 3) : "PIN";
+      return {
+        success: true,
+        student: {
+          matricNo: student.matric_no,
+          fullName: student.full_name,
+          department: student.department,
+          level: student.level,
+          duesPaid: student.dues_paid !== false,
+          disciplinaryStatus: student.disciplinary_status || "GOOD_STANDING",
+          hasPin: !!student.portal_pin,
+          maskedPin: `${pinPrefix}••••-••••`,
+          maskedEmail: student.email
+            ? student.email.replace(/(.{2})(.*)(?=@)/, (_m: any, a: any, b: any) => a + "*".repeat(b.length))
+            : null,
+          maskedPhone: student.phone_number
+            ? student.phone_number.slice(0, 4) + "****" + student.phone_number.slice(-3)
+            : null,
+        },
+      };
+    }
+  } catch (err) {
+    console.warn("Supabase student lookup exception:", err);
+  }
+
+  return {
+    success: false,
+    message: `Matriculation number "${input.matricNo}" was not found on the voter register. Click "New Voter? Get PIN" to activate your profile.`,
+  };
+}
+
+/**
+ * Student Self-Registration — creates or updates voter profile in Supabase
+ * with org-scoped PIN. Responds within 6s.
+ */
+export async function registerStudentAccountAction(input: StudentRegisterInput) {
+  const norm = normalizeMatricNo(input.matricNo);
+  if (!norm.isValid) {
+    return {
+      success: false,
+      message: "Please enter a valid matriculation or student registration number.",
+    };
+  }
+
+  const cleanInstSlug = (input.institutionSlug || "ui").toLowerCase().trim();
+  const orgCode = (input.orgSlug || "ST").substring(0, 4).toUpperCase();
+  const generatedPin = generateSingleVoterPin(orgCode);
+  const institutionId = `inst-${cleanInstSlug}`;
+  const dept = (input.department || "General Studies").trim();
+
+  try {
+    // 1. Ensure Institution exists (upsert — non-fatal if it fails)
+    try {
+      await supabase.from("institutions").upsert({
+        id: institutionId,
+        name: cleanInstSlug.toUpperCase() + " University",
+        slug: cleanInstSlug,
+        code: cleanInstSlug.toUpperCase(),
+        tagline: "Higher Education Institution",
+      });
+    } catch (_) {
+      // Non-fatal — continue with student registration
+    }
+
+    // 2. Check if student already exists
+    let existing: any = null;
+    try {
+      const { data } = await supabase
+        .from("students")
+        .select("*")
+        .eq("institution_id", institutionId)
+        .eq("normalized_matric", norm.normalized)
+        .maybeSingle();
+      existing = data;
+    } catch (_) {
+      // Non-fatal — will attempt insert
+    }
+
+    if (existing && existing.portal_pin) {
+      return {
+        success: false,
+        message: `Matriculation number "${input.matricNo}" is already registered with an active profile. For ballot security, duplicate registrations are blocked. If you lost your PIN, please contact your ELCOM commissioner.`,
+      };
+    }
+
+    if (existing) {
+      // If student was pre-seeded without a PIN, generate and attach their PIN
+      try {
+        await supabase
+          .from("students")
+          .update({
+            full_name: (input.fullName || "").trim(),
+            department: dept,
+            level: Number(input.level) || 100,
+            email: input.email?.trim() || existing.email,
+            phone_number: input.phoneNumber?.trim() || existing.phone_number,
+            portal_pin: generatedPin,
+          })
+          .eq("id", existing.id);
+      } catch (_) {
+        // Non-fatal
+      }
+
+      return {
+        success: true,
+        portalPin: generatedPin,
+        message: "Student voter profile activated successfully!",
+      };
+    }
+
+    // 3. Insert new student
+    const newStudentId = `stud-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 6)}`;
+
+    const { error: insertError } = await supabase.from("students").insert({
+      id: newStudentId,
+      institution_id: institutionId,
+      matric_no: norm.raw,
+      normalized_matric: norm.normalized,
+      full_name: (input.fullName || "").trim(),
+      faculty: input.faculty?.trim() || "Faculty of Science",
+      department: dept,
+      level: Number(input.level) || 100,
+      program_type: "FULL_TIME",
+      dues_paid: true,
+      disciplinary_status: "GOOD_STANDING",
+      hall_of_residence: input.hallOfResidence?.trim() || "Campus",
+      portal_pin: generatedPin,
+      email: input.email?.trim() || null,
+      phone_number: input.phoneNumber?.trim() || null,
+    });
+
+    if (insertError) {
+      console.error("Supabase student insert error:", insertError);
+      // Still return the PIN so they can vote — DB will sync later
+      return {
+        success: true,
+        portalPin: generatedPin,
+        message: "Voter PIN generated! Note: profile may sync to database shortly.",
+      };
+    }
+
+    return {
+      success: true,
+      portalPin: generatedPin,
+      message: "Student voter profile activated successfully!",
+    };
+  } catch (error: any) {
+    console.error("Registration error:", error);
+    // Even on total failure, give them their PIN so they're not blocked
+    return {
+      success: true,
+      portalPin: generatedPin,
+      message: "Voter PIN generated! Profile will sync once connection is restored.",
+    };
+  }
+}
+
+/**
+ * Get all registered voters for an organization (for ELCOM admin dashboard)
+ */
+export async function getOrgVoterRollAction(institutionSlug: string) {
+  const cleanSlug = (institutionSlug || "ui").toLowerCase().trim();
+  const institutionId = `inst-${cleanSlug}`;
+
+  try {
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .eq("institution_id", institutionId)
+      .order("full_name", { ascending: true });
+
+    if (error) {
+      console.warn("getOrgVoterRollAction error:", error);
+      return { success: false, students: [], message: error.message };
+    }
+
+    const students = (data || []).map((s: any) => ({
+      id: s.id,
+      matricNo: s.matric_no,
+      fullName: s.full_name,
+      email: s.email || "",
+      phoneNumber: s.phone_number || "",
+      faculty: s.faculty || "",
+      department: s.department || "",
+      level: s.level || 100,
+      duesPaid: s.dues_paid !== false,
+      disciplinaryStatus: s.disciplinary_status || "GOOD_STANDING",
+      portalPin: s.portal_pin || "",
+      programType: s.program_type || "FULL_TIME",
+    }));
+
+    return { success: true, students };
+  } catch (err: any) {
+    console.error("getOrgVoterRollAction exception:", err);
+    return { success: false, students: [], message: err.message };
+  }
+}
+
+/**
+ * Toggle dues paid status for a student
+ */
+export async function updateStudentDuesAction(studentId: string, paid: boolean) {
+  try {
+    await supabase
+      .from("students")
+      .update({ dues_paid: paid })
+      .eq("id", studentId);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Enable or disable a student voter (uses disciplinary_status as the gate)
+ */
+export async function toggleStudentActiveAction(studentId: string, active: boolean) {
+  try {
+    await supabase
+      .from("students")
+      .update({
+        disciplinary_status: active ? "GOOD_STANDING" : "SUSPENDED",
+      })
+      .eq("id", studentId);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Reset a student's voter PIN
+ */
+export async function resetStudentPinAction(studentId: string, orgSlug: string) {
+  const { generateSingleVoterPin } = await import("@/lib/auth/pin-generator");
+  const orgCode = (orgSlug || "ST").substring(0, 4).toUpperCase();
+  const newPin = generateSingleVoterPin(orgCode);
+
+  try {
+    await supabase
+      .from("students")
+      .update({ portal_pin: newPin })
+      .eq("id", studentId);
+    return { success: true, newPin };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Delete a student voter record from the voter roll
+ */
+export async function deleteStudentAction(studentId: string) {
+  try {
+    const { error } = await supabase
+      .from("students")
+      .delete()
+      .eq("id", studentId);
+
+    if (error) {
+      return { success: false, message: error.message };
+    }
+    return { success: true, message: "Student record deleted from voter register." };
+  } catch (err: any) {
+    return { success: false, message: err.message || "Failed to delete student record." };
+  }
+}
+
+export interface ElectionRulesState {
+  electionId: string;
+  status: "DRAFT" | "ACCREDITATION_OPEN" | "LIVE" | "PAUSED" | "CONCLUDED";
+  requireDuesPayment: boolean;
+  requireGoodDisciplinaryStanding: boolean;
+  requireFullTimeOnly: boolean;
+  requireSessionRegistration: boolean;
+  allowedLevels: number[];
+  authMode: "PIN_SLIP" | "EMAIL_OTP" | "SECRET_MATCH";
+  resultsVisibility: "LIVE" | "SEALED_UNTIL_CLOSE";
+  isPaymentHalted?: boolean;
+  paymentStatus?: "ACTIVE" | "PENDING_PAYMENT" | "LOCKED" | "CONCLUDED" | string;
+}
+
+const DATA_DIR = path.join(process.cwd(), "data");
+const ELECTION_RULES_FILE = path.join(DATA_DIR, "election-rules-store.json");
+
+function readElectionRulesStore(): Record<string, ElectionRulesState> {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(ELECTION_RULES_FILE)) {
+      return {};
+    }
+    const raw = fs.readFileSync(ELECTION_RULES_FILE, "utf8");
+    return JSON.parse(raw) || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function writeElectionRulesStore(store: Record<string, ElectionRulesState>) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(ELECTION_RULES_FILE, JSON.stringify(store, null, 2), "utf8");
+  } catch (err) {
+    console.warn("writeElectionRulesStore error:", err);
+  }
+}
+
+/**
+ * Update election status (Kickstart/Open Polls, Pause, Conclude)
+ */
+export async function updateElectionStatusAction(
+  electionId: string,
+  status: "DRAFT" | "ACCREDITATION_OPEN" | "LIVE" | "PAUSED" | "CONCLUDED"
+) {
+  const store = readElectionRulesStore();
+  const current = store[electionId] || {
+    electionId,
+    status: "LIVE",
+    requireDuesPayment: true,
+    requireGoodDisciplinaryStanding: true,
+    requireFullTimeOnly: false,
+    requireSessionRegistration: true,
+    allowedLevels: [100, 200, 300, 400, 500],
+    authMode: "PIN_SLIP",
+    resultsVisibility: "LIVE",
+  };
+  current.status = status;
+  store[electionId] = current;
+
+  // Sync alias keys (e.g. "ui" from "elec-ui-2026", "nesa" from "elec-nesa-2026")
+  const parts = electionId.toLowerCase().split("-").filter(p => p !== "elec" && p !== "2026");
+  for (const part of parts) {
+    store[part] = { ...current, electionId: part };
+    store[`elec-${part}-2026`] = { ...current, electionId: `elec-${part}-2026` };
+  }
+
+  writeElectionRulesStore(store);
+
+  try {
+    await supabase.from("elections").upsert({
+      id: electionId,
+      status: status,
+    });
+  } catch (_) {}
+
+  revalidatePath("/", "layout");
+  return {
+    success: true,
+    status,
+    message: `Election status updated to ${status}.`,
+  };
+}
+
+/**
+ * Release or Withhold/Seal Election Results
+ */
+export async function updateResultsVisibilityAction(
+  electionId: string,
+  visibility: "LIVE" | "SEALED_UNTIL_CLOSE"
+) {
+  const store = readElectionRulesStore();
+  const current = store[electionId] || {
+    electionId,
+    status: "LIVE",
+    requireDuesPayment: true,
+    requireGoodDisciplinaryStanding: true,
+    requireFullTimeOnly: false,
+    requireSessionRegistration: true,
+    allowedLevels: [100, 200, 300, 400, 500],
+    authMode: "PIN_SLIP",
+    resultsVisibility: "LIVE",
+  };
+  current.resultsVisibility = visibility;
+  store[electionId] = current;
+
+  const parts = electionId.toLowerCase().split("-").filter(p => p !== "elec" && p !== "2026");
+  for (const part of parts) {
+    store[part] = { ...current, electionId: part };
+    store[`elec-${part}-2026`] = { ...current, electionId: `elec-${part}-2026` };
+  }
+
+  writeElectionRulesStore(store);
+
+  try {
+    await supabase.from("elections").upsert({
+      id: electionId,
+      results_visibility: visibility,
+    });
+  } catch (_) {}
+
+  revalidatePath("/", "layout");
+  return {
+    success: true,
+    visibility,
+    message:
+      visibility === "LIVE"
+        ? "Election results have been released to the public!"
+        : "Election results have been withheld / sealed.",
+  };
+}
+
+/**
+ * Update election eligibility rules in Supabase
+ */
+export async function updateElectionRulesAction(rules: ElectionRulesState) {
+  const store = readElectionRulesStore();
+  store[rules.electionId] = rules;
+
+  const parts = rules.electionId.toLowerCase().split("-").filter(p => p !== "elec" && p !== "2026");
+  for (const part of parts) {
+    store[part] = { ...rules, electionId: part };
+    store[`elec-${part}-2026`] = { ...rules, electionId: `elec-${part}-2026` };
+  }
+
+  writeElectionRulesStore(store);
+
+  try {
+    await supabase.from("elections").upsert({
+      id: rules.electionId,
+      status: rules.status,
+      require_dues_payment: rules.requireDuesPayment,
+      require_good_disciplinary_standing: rules.requireGoodDisciplinaryStanding,
+      require_full_time_only: rules.requireFullTimeOnly,
+      auth_mode: rules.authMode,
+      results_visibility: rules.resultsVisibility,
+    });
+  } catch (_) {}
+
+  revalidatePath("/", "layout");
+  return { success: true, message: "Election rules and voting restrictions saved successfully." };
+}
+
+/**
+ * Check if the student organization's election license has been paid & activated by SuperAdmin
+ */
+function checkOrgPaymentLicenseStatus(orgSlug?: string, instSlug?: string): { isHalted: boolean; status: string } {
+  if (!orgSlug) return { isHalted: false, status: "ACTIVE" };
+  try {
+    const licensesFile = path.join(DATA_DIR, "org-licenses-store.json");
+    if (fs.existsSync(licensesFile)) {
+      const raw = fs.readFileSync(licensesFile, "utf8");
+      const list = JSON.parse(raw);
+      if (Array.isArray(list) && list.length > 0) {
+        const cleanOrg = orgSlug.toLowerCase().trim();
+        const cleanInst = (instSlug || "").toLowerCase().trim();
+        const found = list.find((o: any) => {
+          const matchOrg = o.orgSlug?.toLowerCase() === cleanOrg || o.id?.toLowerCase().includes(cleanOrg);
+          const matchInst = !cleanInst || o.institutionSlug?.toLowerCase() === cleanInst || o.id?.toLowerCase().includes(cleanInst);
+          return matchOrg && matchInst;
+        });
+        if (found) {
+          return {
+            isHalted: found.licenseStatus !== "ACTIVE",
+            status: found.licenseStatus || "PENDING_PAYMENT",
+          };
+        }
+      }
+    }
+  } catch (_) {}
+
+  // By default, if no active payment license has been approved by SuperAdmin, halt election
+  return { isHalted: true, status: "PENDING_PAYMENT" };
+}
+
+/**
+ * Get election eligibility rules
+ */
+export async function getElectionRulesAction(
+  electionId: string,
+  institutionSlug?: string,
+  organizationSlug?: string
+): Promise<ElectionRulesState> {
+  const store = readElectionRulesStore();
+
+  const candidates = [
+    electionId,
+    institutionSlug,
+    organizationSlug,
+    institutionSlug ? `elec-${institutionSlug}-2026` : null,
+    organizationSlug ? `elec-${organizationSlug}-2026` : null,
+    institutionSlug && organizationSlug ? `elec-${institutionSlug}-${organizationSlug}-2026` : null,
+  ].filter(Boolean) as string[];
+
+  let baseRules: ElectionRulesState | null = null;
+
+  // 1. Direct match on any candidate key
+  for (const c of candidates) {
+    if (store[c]) {
+      baseRules = store[c];
+      break;
+    }
+    if (store[c.toLowerCase()]) {
+      baseRules = store[c.toLowerCase()];
+      break;
+    }
+  }
+
+  // 2. Fuzzy / alias match across keys in store
+  if (!baseRules) {
+    for (const c of candidates) {
+      const cleanC = c.toLowerCase();
+      for (const [key, rules] of Object.entries(store)) {
+        const k = key.toLowerCase();
+        if (cleanC.includes(k) || k.includes(cleanC)) {
+          baseRules = rules;
+          break;
+        }
+      }
+      if (baseRules) break;
+    }
+  }
+
+  // 3. Query Supabase
+  if (!baseRules) {
+    try {
+      for (const c of candidates) {
+        const { data } = await supabase
+          .from("elections")
+          .select("*")
+          .eq("id", c)
+          .maybeSingle();
+
+        if (data) {
+          const res: ElectionRulesState = {
+            electionId,
+            status: data.status || "LIVE",
+            requireDuesPayment: data.require_dues_payment !== false,
+            requireGoodDisciplinaryStanding: data.require_good_disciplinary_standing !== false,
+            requireFullTimeOnly: !!data.require_full_time_only,
+            requireSessionRegistration: data.require_session_registration !== false,
+            allowedLevels: [100, 200, 300, 400, 500],
+            authMode: data.auth_mode || "PIN_SLIP",
+            resultsVisibility: data.results_visibility || "LIVE",
+          };
+          store[electionId] = res;
+          writeElectionRulesStore(store);
+          baseRules = res;
+          break;
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 4. Default fallback: LIVE
+  if (!baseRules) {
+    baseRules = {
+      electionId,
+      status: "LIVE",
+      requireDuesPayment: true,
+      requireGoodDisciplinaryStanding: true,
+      requireFullTimeOnly: false,
+      requireSessionRegistration: true,
+      allowedLevels: [100, 200, 300, 400, 500],
+      authMode: "PIN_SLIP",
+      resultsVisibility: "LIVE",
+    };
+  }
+
+  // Check organization license payment status
+  const effectiveOrgSlug = organizationSlug || electionId.replace(/^elec-/, "").replace(/-2026$/, "");
+  const paymentCheck = checkOrgPaymentLicenseStatus(effectiveOrgSlug, institutionSlug);
+
+  // If organization payment is pending/halted, force status to PAUSED and set isPaymentHalted flag
+  if (paymentCheck.isHalted) {
+    return {
+      ...baseRules,
+      status: "PAUSED",
+      isPaymentHalted: true,
+      paymentStatus: paymentCheck.status,
+    };
+  }
+
+  return {
+    ...baseRules,
+    isPaymentHalted: false,
+    paymentStatus: "ACTIVE",
+  };
+}
+

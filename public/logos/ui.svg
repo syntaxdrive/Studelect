@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <!-- University of Ibadan (UI) Official Crest -->
+  <defs>
+    <linearGradient id="uiGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5C158" />
+      <stop offset="100%" stop-color="#B8860B" />
+    </linearGradient>
+    <linearGradient id="uiNavy" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#002147" />
+      <stop offset="100%" stop-color="#001428" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Ring -->
+  <circle cx="100" cy="100" r="94" fill="none" stroke="url(#uiGold)" stroke-width="4" />
+  <circle cx="100" cy="100" r="88" fill="url(#uiNavy)" />
+
+  <!-- Shield -->
+  <path d="M 65 58 L 135 58 C 135 92 135 118 100 145 C 65 118 65 92 65 58 Z" fill="#FFFFFF" stroke="url(#uiGold)" stroke-width="2.5" />
+  <path d="M 68 61 L 132 61 C 132 90 132 114 100 140 C 68 114 68 90 68 61 Z" fill="#990000" />
+
+  <!-- The Historic Trenchard Hall Clock Tower -->
+  <rect x="94" y="68" width="12" height="35" fill="url(#uiGold)" />
+  <polygon points="100,60 92,68 108,68" fill="url(#uiGold)" />
+  <circle cx="100" cy="76" r="3" fill="#990000" />
+
+  <!-- Open Book of Sound Knowledge -->
+  <path d="M 80 108 Q 100 102 100 114 Q 100 102 120 108 L 120 122 Q 100 116 100 126 Q 100 116 80 122 Z" fill="#FFFFFF" stroke="#333333" stroke-width="1" />
+
+  <!-- Text -->
+  <text x="100" y="34" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="url(#uiGold)" text-anchor="middle" letter-spacing="1">UNIVERSITY OF IBADAN</text>
+  <text x="100" y="176" font-family="Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle" letter-spacing="1.2">RECTE SAPERE FONS</text>
+</svg>

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <!-- University of Lagos (UNILAG) Official Crest -->
+  <defs>
+    <linearGradient id="unilagGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4AF37" />
+      <stop offset="100%" stop-color="#AA771C" />
+    </linearGradient>
+    <linearGradient id="unilagRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B0000" />
+      <stop offset="100%" stop-color="#5B0000" />
+    </linearGradient>
+    <linearGradient id="unilagBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#003366" />
+      <stop offset="100%" stop-color="#001F3F" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer Gold Rim -->
+  <circle cx="100" cy="100" r="94" fill="none" stroke="url(#unilagGold)" stroke-width="4" />
+  <circle cx="100" cy="100" r="88" fill="#002147" />
+  
+  <!-- Inner Shield -->
+  <path d="M 60 55 L 140 55 C 140 95 140 120 100 150 C 60 120 60 95 60 55 Z" fill="#FFFFFF" stroke="url(#unilagGold)" stroke-width="2" />
+  <path d="M 64 59 L 136 59 C 136 93 136 116 100 144 C 64 116 64 93 64 59 Z" fill="url(#unilagRed)" />
+  
+  <!-- Sun Rays in Shield Top -->
+  <circle cx="100" cy="78" r="16" fill="url(#unilagGold)" />
+  
+  <!-- Sea Waves (Lagos Lagoon) in Shield Bottom -->
+  <path d="M 72 105 Q 86 95 100 105 T 128 105 L 128 120 C 120 130 110 137 100 142 C 90 137 80 130 72 120 Z" fill="url(#unilagBlue)" />
+  <path d="M 75 110 Q 87 103 100 110 T 125 110" fill="none" stroke="#FFFFFF" stroke-width="2" />
+  <path d="M 78 118 Q 89 112 100 118 T 122 118" fill="none" stroke="#FFFFFF" stroke-width="2" />
+  
+  <!-- Open Book of Knowledge -->
+  <path d="M 85 85 Q 100 80 100 92 Q 100 80 115 85 L 115 98 Q 100 93 100 102 Q 100 93 85 98 Z" fill="#FFFFFF" stroke="#333333" stroke-width="1" />
+  
+  <!-- Outer Lettering Circle Text -->
+  <text x="100" y="32" font-family="Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#D4AF37" text-anchor="middle" letter-spacing="1">UNIVERSITY OF LAGOS</text>
+  <text x="100" y="178" font-family="Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#FFFFFF" text-anchor="middle" letter-spacing="1.5">IN DEED AND IN TRUTH</text>
+</svg>

@@ -1,0 +1,304 @@
+// Prisma Schema for StudElect (Multi-Tenant Nigerian University Election Platform)
+// Optimized for Supabase PostgreSQL Free Tier with Row-Level Isolation
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum OrgType {
+  SUG          // Student Union Government (Apex)
+  FACULTY      // Faculty Association (e.g. NESA, FASSA, NAMSN)
+  DEPARTMENT   // Departmental Association (e.g. NACOS, LAWSA)
+  HALL         // Hall of Residence (e.g. Jaja Hall, Moremi, Sultan Bello)
+  CLUB         // Campus Club (e.g. Rotaract, JCI)
+}
+
+enum ProgramType {
+  FULL_TIME
+  PART_TIME
+  DLI
+  SANDWICH
+  POSTGRADUATE
+}
+
+enum DisciplinaryStatus {
+  GOOD_STANDING
+  PROBATION
+  SUSPENDED
+  EXPELLED
+}
+
+enum ElectionStatus {
+  DRAFT
+  SCHEDULED
+  ACCREDITATION_OPEN
+  LIVE
+  CONCLUDED
+  AUDITED
+}
+
+enum ResultsVisibility {
+  LIVE                 // Real-time vote count & percentage charts
+  SEALED_UNTIL_CLOSE   // Turnout counter only; tally computed upon poll close
+}
+
+enum AuthMode {
+  PIN_SLIP             // ELCOM Pre-Generated 8-char Scratch/Slip PIN (₦0 cost)
+  EMAIL_OTP            // Free Resend / Brevo Email OTP
+  TELEGRAM             // Free Telegram Bot 2FA
+  SECRET_MATCH         // Portal Secret / JAMB Reg No Match (₦0 cost)
+}
+
+enum CandidateStatus {
+  NOMINATED
+  CLEARED
+  DISQUALIFIED
+}
+
+enum AccreditationStatus {
+  ELIGIBLE
+  ACCREDITED
+  TOKEN_ISSUED
+  VOTED
+  DISQUALIFIED
+}
+
+enum AdminRoleType {
+  SUPER_ADMIN          // Platform maintainer
+  INSTITUTION_ADMIN    // Dean of Student Affairs / ICT Director
+  ELCOM_CHAIRMAN       // Electoral Commission Chairman
+  RETURNING_OFFICER    // Official result declarer
+  POLLING_AGENT        // Candidate / Party audit observer
+}
+
+// -------------------------------------------------------------
+// Core Multi-Tenant Hierarchy
+// -------------------------------------------------------------
+
+model Institution {
+  id            String         @id @default(uuid())
+  name          String         // e.g. "University of Lagos"
+  slug          String         @unique // e.g. "unilag"
+  code          String         @unique // e.g. "UNILAG"
+  logoUrl       String?
+  config        Json?          // Institution-specific settings (allowed email domains, etc.)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  organizations Organization[]
+  students      Student[]
+  admins        AdminUser[]
+
+  @@map("institutions")
+}
+
+model Organization {
+  id            String         @id @default(uuid())
+  institutionId String
+  name          String         // e.g. "Nigeria Association of Computing Students (NACOS)"
+  slug          String         // e.g. "nacos-unilag"
+  orgType       OrgType        // SUG, FACULTY, DEPARTMENT, HALL, CLUB
+  code          String         // e.g. "NACOS"
+  parentOrgId   String?        // For hierarchy: Dept -> Faculty -> SUG
+  logoUrl       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  institution   Institution    @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  parentOrg     Organization?  @relation("OrgHierarchy", fields: [parentOrgId], references: [id])
+  childOrgs     Organization[] @relation("OrgHierarchy")
+  elections     Election[]
+
+  @@unique([institutionId, slug])
+  @@map("organizations")
+}
+
+// -------------------------------------------------------------
+// Student Master Roster & Eligibility
+// -------------------------------------------------------------
+
+model Student {
+  id                    String             @id @default(uuid())
+  institutionId         String
+  matricNo              String             // e.g. "20/52HA012"
+  normalizedMatric      String             // e.g. "2052HA012" (Normalized for regex matching)
+  fullName              String
+  email                 String?
+  phoneNumber           String?
+  faculty               String             // e.g. "Faculty of Science"
+  department            String             // e.g. "Computer Science"
+  level                 Int                // 100, 200, 300, 400, 500, 600
+  programType           ProgramType        @default(FULL_TIME)
+  isRegisteredSession   Boolean            @default(true) // Portal registration cleared
+  duesPaid              Boolean            @default(false) // Departmental / Faculty dues status
+  disciplinaryStatus    DisciplinaryStatus @default(GOOD_STANDING) // SDC clearance
+  hallOfResidence       String?            // e.g. "Jaja Hall"
+  portalSecretHash      String?            // Hashed JAMB Reg No or portal PIN
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  institution           Institution        @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  accreditations        VoterAccreditation[]
+
+  @@unique([institutionId, normalizedMatric])
+  @@index([institutionId, department, level])
+  @@map("students")
+}
+
+// -------------------------------------------------------------
+// Election Configuration & Posts
+// -------------------------------------------------------------
+
+model Election {
+  id                             String               @id @default(uuid())
+  organizationId                 String
+  title                          String               // e.g. "NACOS 2026/2027 Executive Council Elections"
+  academicSession                String               // e.g. "2025/2026"
+  description                    String?
+  status                         ElectionStatus       @default(DRAFT)
+  resultsVisibility              ResultsVisibility    @default(LIVE)
+  authMode                       AuthMode             @default(PIN_SLIP)
+  requireDuesPayment             Boolean              @default(true)
+  requireFullTimeOnly            Boolean              @default(true)
+  requireGoodDisciplinaryStanding Boolean             @default(true)
+  startsAt                       DateTime
+  endsAt                         DateTime
+  multiSigApprovals              Json?                // Multi-sign off data by ELCOM + DSA
+  createdAt                      DateTime             @default(now())
+  updatedAt                      DateTime             @updatedAt
+
+  organization                   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  posts                          Post[]
+  accreditations                 VoterAccreditation[]
+  ballots                        Ballot[]
+  auditLogs                      AuditLog[]
+
+  @@map("elections")
+}
+
+model Post {
+  id                 String       @id @default(uuid())
+  electionId         String
+  title              String       // e.g. "President", "Vice President", "General Secretary"
+  description        String?
+  maxSelections      Int          @default(1) // 1 for single winner, N for senators / parliament
+  displayOrder       Int          @default(0)
+  allowedLevels      Int[]        // e.g. [200, 300, 400] (empty = all levels eligible)
+  allowedDepartments String[]     // e.g. ["Computer Science"] (empty = all in org)
+  genderRestriction  String?      // e.g. "FEMALE_ONLY" for VP in some constitutions
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  election           Election     @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  candidates         Candidate[]
+
+  @@map("posts")
+}
+
+model Candidate {
+  id           String          @id @default(uuid())
+  postId       String
+  fullName     String          // e.g. "Adebayo Chukwuma Ibrahim"
+  nickname     String?         // e.g. "TechVanguard"
+  matricNo     String?
+  photoUrl     String?
+  manifesto    String?
+  runningMate  String?         // E.g. VP running mate if joint ticket
+  status       CandidateStatus @default(NOMINATED)
+  voteCount    Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  post         Post            @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("candidates")
+}
+
+// -------------------------------------------------------------
+// Voter Accreditation (Identity linked here ONLY, never on Ballot)
+// -------------------------------------------------------------
+
+model VoterAccreditation {
+  id                     String              @id @default(uuid())
+  electionId             String
+  studentId              String
+  status                 AccreditationStatus @default(ELIGIBLE)
+  disqualificationReason String?             // e.g. "Unpaid dues", "SDC suspension", "Part-Time"
+  voterPinHash           String?             // Hashed 8-char slip PIN for auth
+  tokenIssuedAt          DateTime?
+  votedAt                DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  election               Election            @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  student                Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([electionId, studentId])
+  @@index([electionId, status])
+  @@map("voter_accreditations")
+}
+
+// -------------------------------------------------------------
+// Anonymous Ballot Store (Decoupled: Zero link to student identity)
+// -------------------------------------------------------------
+
+model Ballot {
+  id          String   @id @default(uuid())
+  electionId  String
+  receiptHash String   @unique // Deterministic receipt SHA-256 for public verification
+  selections  Json     // Array of { postId: string, candidateId: string }
+  castAt      DateTime @default(now())
+  blockHash   String   // Hash chained to previous ballot for tamper-proofing
+
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  @@index([electionId, castAt])
+  @@map("ballots")
+}
+
+// -------------------------------------------------------------
+// Tamper-Evident Audit Ledger
+// -------------------------------------------------------------
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  electionId  String
+  actionType  String   // E.g. "POLL_OPENED", "BALLOT_CAST", "CANDIDATE_CLEARED"
+  actorId     String?  // Admin ID or "SYSTEM"
+  actorRole   String?
+  payload     Json?
+  prevHash    String
+  currentHash String
+  createdAt   DateTime @default(now())
+
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  @@index([electionId, createdAt])
+  @@map("audit_logs")
+}
+
+// -------------------------------------------------------------
+// Administrative Users
+// -------------------------------------------------------------
+
+model AdminUser {
+  id            String        @id @default(uuid())
+  institutionId String
+  email         String        @unique
+  fullName      String
+  passwordHash  String
+  role          AdminRoleType @default(ELCOM_CHAIRMAN)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  institution   Institution   @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@map("admin_users")
+}
