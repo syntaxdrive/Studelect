@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudElect — ELCOM Administrator Guide</title>
+  <style>
+    /* ──────────────── FONTS ──────────────── */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    /* ──────────────── RESET & BASE ──────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:      #09090b;
+      --ink2:     #3f3f46;
+      --ink3:     #71717a;
+      --ink4:     #a1a1aa;
+      --border:   #e4e4e7;
+      --border2:  #d4d4d8;
+      --surface:  #fafafa;
+      --white:    #ffffff;
+      --blue:     #2563eb;
+      --blue-lt:  #eff6ff;
+      --amber:    #d97706;
+      --amber-lt: #fffbeb;
+      --green:    #16a34a;
+      --green-lt: #f0fdf4;
+      --red:      #dc2626;
+      --red-lt:   #fef2f2;
+      --purple:   #7c3aed;
+      --purple-lt:#f5f3ff;
+    }
+
+    html { font-size: 14px; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--ink);
+      background: var(--white);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ──────────────── PRINT ──────────────── */
+    @media print {
+      html { font-size: 11px; }
+      .no-print { display: none !important; }
+      .page-break { page-break-before: always; }
+      .page-break-avoid { page-break-inside: avoid; }
+      body { background: white; }
+      .cover { min-height: 100vh; }
+      a { color: inherit; text-decoration: none; }
+    }
+
+    /* ──────────────── LAYOUT ──────────────── */
+    .doc-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 32px 80px;
+    }
+
+    /* ──────────────── COVER PAGE ──────────────── */
+    .cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 64px 0;
+      border-bottom: 3px solid var(--ink);
+      margin-bottom: 64px;
+    }
+
+    .cover-eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      margin-bottom: 24px;
+    }
+
+    .cover-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 48px;
+    }
+
+    .cover-logo-mark {
+      width: 48px;
+      height: 48px;
+      background: var(--ink);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -2px;
+    }
+
+    .cover-logo-name {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: var(--ink);
+    }
+
+    .cover-logo-name span { color: var(--blue); }
+
+    .cover h1 {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.1;
+      color: var(--ink);
+      margin-bottom: 20px;
+      max-width: 600px;
+    }
+
+    .cover-subtitle {
+      font-size: 16px;
+      color: var(--ink2);
+      max-width: 520px;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    .cover-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .cover-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink2);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 5px 12px;
+      background: var(--surface);
+    }
+
+    .cover-tag.blue { border-color: var(--blue); color: var(--blue); background: var(--blue-lt); }
+    .cover-tag.green { border-color: var(--green); color: var(--green); background: var(--green-lt); }
+
+    .cover-confidential {
+      margin-top: auto;
+      padding-top: 48px;
+      font-size: 11px;
+      color: var(--ink4);
+      line-height: 1.8;
+      border-top: 1px solid var(--border);
+      width: 100%;
+    }
+
+    /* ──────────────── TABLE OF CONTENTS ──────────────── */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 36px;
+      margin-bottom: 64px;
+    }
+
+    .toc h2 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      margin-bottom: 20px;
+    }
+
+    .toc ol {
+      list-style: none;
+      counter-reset: toc-counter;
+    }
+
+    .toc > ol > li {
+      counter-increment: toc-counter;
+      display: flex;
+      align-items: baseline;
+      gap: 0;
+      border-bottom: 1px dashed var(--border2);
+      padding: 9px 0;
+    }
+
+    .toc > ol > li:last-child { border-bottom: none; }
+
+    .toc > ol > li::before {
+      content: counter(toc-counter, decimal-leading-zero);
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--ink4);
+      min-width: 32px;
+    }
+
+    .toc-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink2);
+      flex: 1;
+    }
+
+    /* ──────────────── SECTION HEADINGS ──────────────── */
+    .section {
+      margin-bottom: 64px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .section-num {
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--ink4);
+      letter-spacing: 0.1em;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 3px 8px;
+      white-space: nowrap;
+      margin-top: 4px;
+    }
+
+    .section-header h2 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 28px 0 10px;
+      letter-spacing: -0.2px;
+    }
+
+    h3::before {
+      content: '— ';
+      color: var(--ink4);
+    }
+
+    p {
+      font-size: 13.5px;
+      color: var(--ink2);
+      margin-bottom: 14px;
+      line-height: 1.7;
+    }
+
+    /* ──────────────── STEP CARDS ──────────────── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+
+    .step {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .step:last-child { border-bottom: none; }
+
+    .step-num {
+      min-width: 52px;
+      background: var(--ink);
+      color: white;
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 0;
+    }
+
+    .step-body {
+      flex: 1;
+      padding: 18px 22px;
+      background: var(--white);
+    }
+
+    .step-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 5px;
+    }
+
+    .step-desc {
+      font-size: 12.5px;
+      color: var(--ink2);
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    /* ──────────────── CALLOUT BOXES ──────────────── */
+    .callout {
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 20px 0;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .callout-icon {
+      font-size: 16px;
+      line-height: 1.65;
+      flex-shrink: 0;
+    }
+
+    .callout-body { flex: 1; }
+
+    .callout-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .callout p { font-size: 12.5px; margin: 0; }
+
+    .callout.info { background: var(--blue-lt); border: 1px solid #bfdbfe; }
+    .callout.info .callout-label { color: var(--blue); }
+    .callout.info p { color: #1e40af; }
+
+    .callout.warning { background: var(--amber-lt); border: 1px solid #fde68a; }
+    .callout.warning .callout-label { color: var(--amber); }
+    .callout.warning p { color: #92400e; }
+
+    .callout.success { background: var(--green-lt); border: 1px solid #bbf7d0; }
+    .callout.success .callout-label { color: var(--green); }
+    .callout.success p { color: #14532d; }
+
+    .callout.danger { background: var(--red-lt); border: 1px solid #fecaca; }
+    .callout.danger .callout-label { color: var(--red); }
+    .callout.danger p { color: #7f1d1d; }
+
+    .callout.purple { background: var(--purple-lt); border: 1px solid #ddd6fe; }
+    .callout.purple .callout-label { color: var(--purple); }
+    .callout.purple p { color: #3b0764; }
+
+    /* ──────────────── CODE / PATH ──────────────── */
+    code {
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: var(--ink);
+    }
+
+    .url-block {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--ink);
+      color: #86efac;
+      border-radius: 8px;
+      padding: 12px 18px;
+      margin: 12px 0;
+      letter-spacing: 0.02em;
+    }
+
+    /* ──────────────── TABLE ──────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 12.5px;
+    }
+
+    th {
+      background: var(--ink);
+      color: white;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 14px;
+    }
+
+    th:first-child { border-radius: 8px 0 0 0; }
+    th:last-child { border-radius: 0 8px 0 0; }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink2);
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td { background: var(--surface); }
+    tr:last-child td { border-bottom: none; }
+    tr:last-child td:first-child { border-radius: 0 0 0 8px; }
+    tr:last-child td:last-child { border-radius: 0 0 8px 0; }
+
+    table { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+
+    /* ──────────────── CHECKLIST ──────────────── */
+    .checklist {
+      list-style: none;
+      margin: 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.5;
+    }
+
+    .check-box {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border2);
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ──────────────── STATUS BADGES ──────────────── */
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 4px;
+      padding: 2px 8px;
+    }
+
+    .badge.live { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .badge.paused { background: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+    .badge.ended { background: #f4f4f5; color: #52525b; border: 1px solid #d4d4d8; }
+    .badge.pending { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+    /* ──────────────── DIVIDER ──────────────── */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 40px 0;
+    }
+
+    /* ──────────────── PRINT BUTTON ──────────────── */
+    .print-btn {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      background: var(--ink);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 28px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+      font-family: inherit;
+      letter-spacing: -0.2px;
+      transition: background 0.2s;
+      z-index: 100;
+    }
+
+    .print-btn:hover { background: #27272a; }
+
+    /* ──────────────── FOOTER ──────────────── */
+    .doc-footer {
+      border-top: 2px solid var(--ink);
+      padding-top: 32px;
+      margin-top: 64px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .doc-footer-brand {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--ink);
+    }
+
+    .doc-footer-brand span { color: var(--blue); }
+
+    .doc-footer p {
+      font-size: 11px;
+      color: var(--ink4);
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="doc-wrap">
+
+  <!-- ════════════════════════════════════════ COVER ════════════════════════════════════════ -->
+  <div class="cover page-break-avoid">
+    <p class="cover-eyebrow">Official Platform Documentation · Confidential</p>
+
+    <div class="cover-logo">
+      <div class="cover-logo-mark">SE</div>
+      <div class="cover-logo-name">Stud<span>Elect</span></div>
+    </div>
+
+    <h1>ELCOM Administrator Guide</h1>
+
+    <p class="cover-subtitle">
+      A complete, step-by-step reference for Electoral Commission administrators running
+      student elections on StudElect. From first login to final results publication.
+    </p>
+
+    <div class="cover-meta">
+      <span class="cover-tag blue">ELCOM Administrators</span>
+      <span class="cover-tag green">All Election Types</span>
+      <span class="cover-tag">Version 1.0 · September 2026</span>
+      <span class="cover-tag">studelect.ng</span>
+    </div>
+
+    <div class="cover-confidential">
+      <strong>CONFIDENTIAL</strong> — This document is intended for authorised Electoral Commission (ELCOM)
+      administrators only. Do not share login credentials or voter data with unauthorised persons.
+      For technical support, contact your StudElect platform representative.
+      <br/>
+      StudElect Nigeria &nbsp;·&nbsp; privacy@studelect.ng &nbsp;·&nbsp; studelect.ng
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ TABLE OF CONTENTS ════════════════════════════════════════ -->
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><span class="toc-title">Overview — What is StudElect?</span></li>
+      <li><span class="toc-title">Before You Begin — What You Need</span></li>
+      <li><span class="toc-title">Logging In for the First Time</span></li>
+      <li><span class="toc-title">Navigating the ELCOM Dashboard</span></li>
+      <li><span class="toc-title">Setting Up Election Rules</span></li>
+      <li><span class="toc-title">Building Your Voter Roll (Uploading Students)</span></li>
+      <li><span class="toc-title">Managing Student Eligibility</span></li>
+      <li><span class="toc-title">Adding Positions and Candidates</span></li>
+      <li><span class="toc-title">Going LIVE — Launching the Election</span></li>
+      <li><span class="toc-title">During the Election — Real-Time Monitoring</span></li>
+      <li><span class="toc-title">Closing the Election</span></li>
+      <li><span class="toc-title">Publishing Results</span></li>
+      <li><span class="toc-title">Post-Election — Audit & Record Keeping</span></li>
+      <li><span class="toc-title">Troubleshooting Common Issues</span></li>
+      <li><span class="toc-title">Quick Reference Card</span></li>
+    </ol>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 1 ════════════════════════════════════════ -->
+  <div class="section page-break-avoid">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2>Overview — What is StudElect?</h2>
+    </div>
+
+    <p>
+      StudElect is a <strong>multi-tenant digital election platform</strong> built specifically
+      for Nigerian tertiary institutions. It allows student organisations — SUG, NESA, NACOS,
+      faculty associations, departmental associations, and more — to conduct fully cryptographic,
+      constitutionally compliant elections entirely online.
+    </p>
+
+    <p>
+      As an ELCOM (Electoral Commission) administrator, you are the operator of your
+      organisation's election. StudElect gives you the tools to manage the entire process —
+      from building the voter roll to publishing verified results — without needing any
+      technical background.
+    </p>
+
+    <h3>Key Concepts</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Term</th>
+          <th>What It Means</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Institution</strong></td>
+          <td>Your university or polytechnic (e.g. University of Ibadan, UNILAG)</td>
+        </tr>
+        <tr>
+          <td><strong>Organisation</strong></td>
+          <td>Your student body within that institution (e.g. NESA, NACOS, SUG)</td>
+        </tr>
+        <tr>
+          <td><strong>Voter Roll</strong></td>
+          <td>The official list of students eligible to vote in your election</td>
+        </tr>
+        <tr>
+          <td><strong>Accreditation</strong></td>
+          <td>The process by which a voter confirms their identity and receives a one-time voting token</td>
+        </tr>
+        <tr>
+          <td><strong>PIN</strong></td>
+          <td>A 6-digit one-time code generated per student for accreditation. Students enter this in the voter booth.</td>
+        </tr>
+        <tr>
+          <td><strong>Ballot Token</strong></td>
+          <td>A cryptographic key issued after accreditation that authorises exactly one vote. Cannot be reused.</td>
+        </tr>
+        <tr>
+          <td><strong>Election Status</strong></td>
+          <td><span class="badge pending">PENDING</span> <span class="badge live">LIVE</span> <span class="badge paused">PAUSED</span> <span class="badge ended">ENDED</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout info">
+      <span class="callout-icon">&#128274;</span>
+      <div class="callout-body">
+        <div class="callout-label">Security Architecture</div>
+        <p>No two votes can be linked back to a specific student. Ballot selections are cryptographically decoupled from voter identity. Even the ELCOM administrator cannot see who voted for whom — only the aggregate count per candidate.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 2 ════════════════════════════════════════ -->
+  <div class="section page-break-avoid">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2>Before You Begin — What You Need</h2>
+    </div>
+
+    <p>Before running an election on StudElect, make sure the following are ready:</p>
+
+    <ul class="checklist">
+      <li><div class="check-box"></div><span>Your login credentials from the StudElect platform administrator (email and password)</span></li>
+      <li><div class="check-box"></div><span>A laptop or desktop computer with a modern browser (Chrome, Firefox, Edge, or Safari)</span></li>
+      <li><div class="check-box"></div><span>A stable internet connection</span></li>
+      <li><div class="check-box"></div><span>Your voter roll in Excel format (.xlsx) — matric numbers, full names, departments, and academic levels</span></li>
+      <li><div class="check-box"></div><span>Your list of positions (offices) to be contested</span></li>
+      <li><div class="check-box"></div><span>Your list of cleared/screened candidates per position</span></li>
+      <li><div class="check-box"></div><span>The agreed election date(s) and time window</span></li>
+      <li><div class="check-box"></div><span>Confirmation from the platform administrator that your organisation's license is <span class="badge live">ACTIVE</span></span></li>
+    </ul>
+
+    <div class="callout warning">
+      <span class="callout-icon">&#9888;</span>
+      <div class="callout-body">
+        <div class="callout-label">Important</div>
+        <p>The election cannot go LIVE if your organisation's payment license is not active. Contact your StudElect platform representative if your election is being blocked by a payment hold.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 3 ════════════════════════════════════════ -->
+  <div class="section page-break-avoid">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2>Logging In for the First Time</h2>
+    </div>
+
+    <p>
+      Your login link is specific to your institution. It follows this format:
+    </p>
+
+    <div class="url-block">https://studelect.ng/{your-institution-slug}/admin</div>
+
+    <p>
+      For example, if your institution is University of Ibadan and your organisation
+      is NESA, your admin panel is at:
+    </p>
+
+    <div class="url-block">https://studelect.ng/ui/admin</div>
+
+    <p>
+      Alternatively, you can go to the general login page at
+      <code>https://studelect.ng/admin/login</code> and enter your credentials there.
+    </p>
+
+    <div class="steps">
+      <div class="step page-break-avoid">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Open your institution's admin URL</p>
+          <p class="step-desc">Navigate to <code>studelect.ng/{institution}/admin</code> in your browser. You will be redirected to the login page if you are not already signed in.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Enter your email and password</p>
+          <p class="step-desc">Use the credentials provided to you by the StudElect platform administrator. Your password is case-sensitive.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Click "Sign In to Admin Panel"</p>
+          <p class="step-desc">You will be authenticated and redirected to your ELCOM dashboard for your specific organisation.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p class="step-title">Verify you are in the correct organisation</p>
+          <p class="step-desc">Check the top of the dashboard — it should show your institution name, organisation name, and your role as "ELCOM Commissioner". If it is wrong, sign out and contact the platform administrator.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <span class="callout-icon">&#128680;</span>
+      <div class="callout-body">
+        <div class="callout-label">Security — Do Not Share</div>
+        <p>Never share your admin password with anyone, including other ELCOM members. If you believe your credentials are compromised, contact the platform administrator immediately to reset them.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 4 ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2>Navigating the ELCOM Dashboard</h2>
+    </div>
+
+    <p>
+      The ELCOM dashboard is divided into clear sections. Here is what each area does:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Dashboard Section</th>
+          <th>What You Do Here</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Overview / Telemetry</strong></td>
+          <td>See real-time stats — total registered voters, accredited count, ballots cast, turnout percentage</td>
+        </tr>
+        <tr>
+          <td><strong>Election Settings</strong></td>
+          <td>Configure your election rules: voting hours, eligibility criteria, results visibility</td>
+        </tr>
+        <tr>
+          <td><strong>Voter Roll</strong></td>
+          <td>View all registered students, their eligibility status, dues payment, and PIN management</td>
+        </tr>
+        <tr>
+          <td><strong>Candidates</strong></td>
+          <td>Add positions (offices), upload or manually enter candidate details, set screening status</td>
+        </tr>
+        <tr>
+          <td><strong>Election Control</strong></td>
+          <td>Change election status: PENDING → LIVE → PAUSED → ENDED</td>
+        </tr>
+        <tr>
+          <td><strong>Results</strong></td>
+          <td>View live or final vote tallies per candidate, toggle public visibility of results</td>
+        </tr>
+        <tr>
+          <td><strong>Audit Log</strong></td>
+          <td>Cryptographic receipt chain — every ballot's hash, timestamp, and anonymised voter token</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 5 ════════════════════════════════════════ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2>Setting Up Election Rules</h2>
+    </div>
+
+    <p>
+      Before adding candidates or uploading voters, configure your election rules.
+      These settings govern how the election will operate.
+    </p>
+
+    <div class="steps">
+      <div class="step page-break-avoid">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Go to "Election Settings" on your dashboard</p>
+          <p class="step-desc">Locate the Election Settings or Election Rules panel on your dashboard.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Set the Election Title</p>
+          <p class="step-desc">Give your election a formal name, e.g. "NESA General Elections 2025/2026 Session"</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Set Voting Hours</p>
+          <p class="step-desc">Define the opening and closing time for the voter booth. Outside these hours, the booth will show a "Voting Closed" message even if the election status is LIVE.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p class="step-title">Configure Eligibility Rules</p>
+          <p class="step-desc">Choose which criteria students must meet to vote. Options typically include: dues payment, active disciplinary standing, and verified registration.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <p class="step-title">Set Results Visibility</p>
+          <p class="step-desc">Choose when results become public. Options: Hidden (manual release), Live (visible during voting), or Post-Election (visible only after you close the election).</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <p class="step-title">Save Settings</p>
+          <p class="step-desc">Click "Save Election Rules". These can be updated at any time while the election is PENDING. Once LIVE, some settings are locked for integrity.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">&#128205;</span>
+      <div class="callout-body">
+        <div class="callout-label">Pro Tip</div>
+        <p>Keep results <strong>hidden</strong> until voting closes. If results are visible while voting is open, it can influence remaining voters and compromise the integrity of the election.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 6 ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2>Building Your Voter Roll (Uploading Students)</h2>
+    </div>
+
+    <p>
+      The voter roll is the authoritative list of students who may vote in your election.
+      StudElect accepts voter roll uploads in Excel (.xlsx) format.
+    </p>
+
+    <h3>Preparing Your Excel File</h3>
+
+    <p>Your Excel file must have the following columns in this exact order:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Column</th>
+          <th>Field Name</th>
+          <th>Required?</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>A</td>
+          <td>Matriculation Number</td>
+          <td>Yes</td>
+          <td>200404/BE/EEE/001</td>
+        </tr>
+        <tr>
+          <td>B</td>
+          <td>Full Name</td>
+          <td>Yes</td>
+          <td>Adebayo Chinonso Felix</td>
+        </tr>
+        <tr>
+          <td>C</td>
+          <td>Department</td>
+          <td>Yes</td>
+          <td>Economics</td>
+        </tr>
+        <tr>
+          <td>D</td>
+          <td>Academic Level</td>
+          <td>Yes</td>
+          <td>300</td>
+        </tr>
+        <tr>
+          <td>E</td>
+          <td>Email</td>
+          <td>Optional</td>
+          <td>adebayo@student.ui.edu.ng</td>
+        </tr>
+        <tr>
+          <td>F</td>
+          <td>Phone / WhatsApp</td>
+          <td>Optional</td>
+          <td>08012345678</td>
+        </tr>
+        <tr>
+          <td>G</td>
+          <td>Dues Paid (Yes/No)</td>
+          <td>Optional</td>
+          <td>Yes</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Prepare your Excel file</p>
+          <p class="step-desc">Ensure row 1 contains column headers. Data starts from row 2. Remove any merged cells, formulas, or special characters in matric numbers.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Navigate to "Voter Roll" → "Upload Roster"</p>
+          <p class="step-desc">Click the upload button and select your Excel file. The system will preview the first few rows for you to confirm.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Confirm the upload</p>
+          <p class="step-desc">Review the preview. If the columns align correctly, click "Import". The system will add all students to your voter roll and generate a unique PIN for each one.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p class="step-title">Verify the import</p>
+          <p class="step-desc">After import, the Voter Roll table will show all students. Check the total count matches your expected number. You can add or remove students manually after import.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout warning">
+      <span class="callout-icon">&#9888;</span>
+      <div class="callout-body">
+        <div class="callout-label">Matric Number Formatting</div>
+        <p>Matric numbers are normalised automatically (punctuation, spacing, and case differences are handled). However, ensure there are no completely wrong matric numbers — students will not be able to find themselves in the system if their matric number is wrong.</p>
+      </div>
+    </div>
+
+    <h3>Adding Students Manually</h3>
+    <p>
+      If you need to add individual students after the bulk upload, go to
+      <strong>Voter Roll → Add Student</strong> and fill in the required fields.
+      Each manually added student also receives a generated PIN.
+    </p>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 7 ════════════════════════════════════════ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <h2>Managing Student Eligibility</h2>
+    </div>
+
+    <p>
+      Not every student on the voter roll may be automatically eligible to vote.
+      StudElect lets you enforce eligibility rules and manage individual student status.
+    </p>
+
+    <h3>Dues Payment Status</h3>
+    <p>
+      If your election requires dues payment as a condition for voting, you can mark
+      students as dues-paid individually or via bulk update. Students who are not marked
+      as dues-paid will be blocked from accreditation at the voter booth.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Go to Voter Roll</p>
+          <p class="step-desc">You will see each student's current dues status. A red "Unpaid" badge indicates they cannot vote yet.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Find the student</p>
+          <p class="step-desc">Use the search box to find a student by name or matric number.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Toggle their dues status</p>
+          <p class="step-desc">Click "Mark as Paid" (or the dues toggle) next to the student. The change takes effect immediately — they will be able to accredit on their next attempt at the voter booth.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>Deactivating a Student</h3>
+    <p>
+      If a student should be excluded from voting entirely (e.g. disciplinary action, withdrawal),
+      you can <strong>deactivate</strong> their account from the Voter Roll. A deactivated student
+      cannot accredit or vote, even if their matric number is in the system.
+    </p>
+
+    <h3>Resetting a PIN</h3>
+    <p>
+      If a student lost their PIN or it was issued incorrectly, you can reset it from the
+      Voter Roll by clicking the <strong>Reset PIN</strong> action next to their record.
+      A new 6-digit PIN is generated instantly. Share it with the student securely — verbally or
+      via direct WhatsApp message. Never post PINs publicly.
+    </p>
+
+    <div class="callout danger">
+      <span class="callout-icon">&#128680;</span>
+      <div class="callout-body">
+        <div class="callout-label">PIN Confidentiality</div>
+        <p>PINs are personal and single-use. Once a student uses their PIN to accredit, it cannot be used again. Never paste PINs in group chats or broadcast messages — only send each PIN to the individual student it belongs to.</p>
+      </div>
+    </div>
+
+    <h3>How Students Register Themselves</h3>
+    <p>
+      Students can also self-register at the voter booth by visiting
+      <code>studelect.ng/{institution}/{org}</code>.
+      They enter their matric number and other details. The system checks whether they exist in
+      your voter roll. If they do, they are confirmed. If they do not, registration is rejected —
+      which is why your voter roll must be complete before the election goes LIVE.
+    </p>
+
+    <h3>Promoting a Student to Admin</h3>
+    <p>
+      If you need a student to have ELCOM admin access (e.g. a returning officer who needs
+      to monitor the dashboard), you can promote them from the Voter Roll. Find the student
+      and click <strong>"Promote to Admin"</strong>. The next time they log into the admin
+      panel with their student account, they will have admin-level access.
+    </p>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 8 ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">08</span>
+      <h2>Adding Positions and Candidates</h2>
+    </div>
+
+    <p>
+      Before the election goes LIVE, you must configure the positions being contested
+      and the candidates running for each position.
+    </p>
+
+    <h3>Step 1 — Create Positions (Offices)</h3>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Go to "Candidates" → "Manage Positions"</p>
+          <p class="step-desc">You will see an empty list initially. Click "Add Position".</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Enter the position title</p>
+          <p class="step-desc">E.g. "President", "Vice President", "Secretary General", "Financial Secretary", "PRO", "Senate Representative", etc.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Set the number of winners</p>
+          <p class="step-desc">For most positions this is 1. For positions like "Senators" where multiple candidates win, set the appropriate number.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p class="step-title">Save and repeat for each position</p>
+          <p class="step-desc">Add all your positions before moving on to candidates.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>Step 2 — Add Candidates</h3>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Select a position from the list</p>
+          <p class="step-desc">Click "Add Candidate" under the relevant position.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Enter candidate details</p>
+          <p class="step-desc">Full name, matric number, department, level. Optionally upload a passport photo.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Set screening status to "Cleared"</p>
+          <p class="step-desc">Only candidates marked as <strong>Cleared</strong> will appear on the ballot. Candidates marked as "Disqualified" or "Pending" will not be shown to voters.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p class="step-title">Repeat for all candidates across all positions</p>
+          <p class="step-desc">Double-check spellings and matric numbers. These appear exactly as entered on the voter's ballot.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <span class="callout-icon">&#10003;</span>
+      <div class="callout-body">
+        <div class="callout-label">Final Check</div>
+        <p>Before going LIVE, click through each position and confirm every cleared candidate appears correctly. Candidates cannot be edited once the first ballot has been cast.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 9 ════════════════════════════════════════ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <span class="section-num">09</span>
+      <h2>Going LIVE — Launching the Election</h2>
+    </div>
+
+    <p>
+      This is the most important step. Once you set the election to
+      <span class="badge live">LIVE</span>, the voter booth opens and students
+      can begin accrediting and casting ballots.
+    </p>
+
+    <h3>Pre-Launch Checklist</h3>
+    <ul class="checklist">
+      <li><div class="check-box"></div><span>Election rules are saved (title, voting hours, eligibility, results visibility)</span></li>
+      <li><div class="check-box"></div><span>Voter roll has been uploaded and verified</span></li>
+      <li><div class="check-box"></div><span>All eligible students are marked as dues-paid (if required)</span></li>
+      <li><div class="check-box"></div><span>All positions have been created</span></li>
+      <li><div class="check-box"></div><span>All candidates have been added and marked as "Cleared"</span></li>
+      <li><div class="check-box"></div><span>Platform license is <span class="badge live">ACTIVE</span> (confirm with your StudElect representative)</span></li>
+      <li><div class="check-box"></div><span>You have tested the voter booth URL and it loads correctly</span></li>
+    </ul>
+
+    <h3>Setting the Election to LIVE</h3>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Go to "Election Control" on your dashboard</p>
+          <p class="step-desc">Find the status control panel. The current status is PENDING.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Click "Set to LIVE"</p>
+          <p class="step-desc">A confirmation dialog will appear. Read it carefully.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Confirm the action</p>
+          <p class="step-desc">Click "Yes, Launch Election". The status changes to LIVE immediately.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p class="step-title">Share the voter booth URL with students</p>
+          <p class="step-desc">The voter booth is at <code>studelect.ng/{institution}/{org}</code>. Post this on your official WhatsApp group, notice board, or student portal announcement.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">&#128241;</span>
+      <div class="callout-body">
+        <div class="callout-label">What to Share with Students</div>
+        <p>Send students this message:<br/><br/>
+        <em>"Dear [Org] members, voting is now open. Visit <strong>studelect.ng/{institution}/{org}</strong> to cast your ballot. You will need your matriculation number and the 6-digit PIN sent to you. Voting closes at [time]. Your vote is secret and cryptographically secured."</em></p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 10 ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">10</span>
+      <h2>During the Election — Real-Time Monitoring</h2>
+    </div>
+
+    <p>
+      While the election is LIVE, your dashboard shows real-time statistics updated
+      every few seconds. Here is what to watch:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>What It Tells You</th>
+          <th>Action If Concern</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Total Registered</strong></td>
+          <td>Number of students on the voter roll</td>
+          <td>Should match your expected eligible count</td>
+        </tr>
+        <tr>
+          <td><strong>Accredited</strong></td>
+          <td>Students who have verified their identity and received a ballot token</td>
+          <td>If very low, remind students to accredit before voting closes</td>
+        </tr>
+        <tr>
+          <td><strong>Ballots Cast</strong></td>
+          <td>Number of completed votes submitted</td>
+          <td>Monitor for unusual spikes or drops</td>
+        </tr>
+        <tr>
+          <td><strong>Voter Turnout %</strong></td>
+          <td>Ballots cast as a percentage of registered voters</td>
+          <td>Low turnout — send reminders via your group channel</td>
+        </tr>
+        <tr>
+          <td><strong>Live Leaderboard</strong></td>
+          <td>Current vote counts per candidate (if results visibility is set to Live)</td>
+          <td>Consider setting to Hidden if this may discourage voters</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Pausing the Election</h3>
+    <p>
+      If a technical issue arises or there is a formal ELCOM resolution to pause voting
+      (e.g. a candidate dispute), you can pause the election from the Election Control panel.
+    </p>
+
+    <div class="callout warning">
+      <span class="callout-icon">&#9616;&#9616;</span>
+      <div class="callout-body">
+        <div class="callout-label">When the Election is PAUSED</div>
+        <p>The voter booth shows a "Voting Temporarily Suspended" banner. Students cannot accredit or submit new ballots. All data is preserved. You can resume (set back to LIVE) at any time.</p>
+      </div>
+    </div>
+
+    <h3>Handling Student Issues During Voting</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Student Problem</th>
+          <th>Your Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cannot find their matric number</td>
+          <td>Check the voter roll — they may not be registered. If they should be eligible, add them manually and share their generated PIN.</td>
+        </tr>
+        <tr>
+          <td>PIN not working</td>
+          <td>Go to Voter Roll, find the student, click Reset PIN. Share the new PIN with them directly.</td>
+        </tr>
+        <tr>
+          <td>"Dues not paid" error at accreditation</td>
+          <td>If they have paid, go to Voter Roll and toggle their dues status to Paid.</td>
+        </tr>
+        <tr>
+          <td>"Already voted" but student says they did not</td>
+          <td>The system has a strict one-vote-per-matric rule. Check the audit log. If there is evidence of accidental double-submission, escalate to the platform administrator.</td>
+        </tr>
+        <tr>
+          <td>Student voted for wrong candidate</td>
+          <td>Ballots are final and cannot be reversed. This is standard electoral procedure. The student should have reviewed their choices before submitting.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 11 ════════════════════════════════════════ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <span class="section-num">11</span>
+      <h2>Closing the Election</h2>
+    </div>
+
+    <p>
+      When voting time is over, you must officially close (end) the election.
+      This is a permanent action — once ended, the election cannot be set back to LIVE.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Confirm voting has ended</p>
+          <p class="step-desc">Make a formal announcement in your student group that voting is closed. Give a 5-minute grace period for students who are mid-session.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Go to Election Control</p>
+          <p class="step-desc">Click "End Election". A confirmation dialog will appear warning you that this action is irreversible.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Confirm</p>
+          <p class="step-desc">The election status changes to <span class="badge ended">ENDED</span>. The voter booth immediately shows "Voting has closed." No further votes can be cast.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p class="step-title">Note the final vote counts</p>
+          <p class="step-desc">Take screenshots or download the results immediately. Go to the Results section and record the final tally for each position.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout purple">
+      <span class="callout-icon">&#128203;</span>
+      <div class="callout-body">
+        <div class="callout-label">Good Practice</div>
+        <p>Document the exact time the election ended, the final turnout percentage, and take a screenshot of the Results page. This forms part of your official electoral record and may be required for disputes.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 12 ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">12</span>
+      <h2>Publishing Results</h2>
+    </div>
+
+    <p>
+      After closing the election, you can publish the results publicly on the platform.
+      Published results are visible to all students at the voter booth URL — no login required.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p class="step-title">Go to "Results" on your dashboard</p>
+          <p class="step-desc">You will see the final vote tally per candidate per position, sorted from highest to lowest votes.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p class="step-title">Review the results carefully</p>
+          <p class="step-desc">Verify total votes per position equals the number of ballots cast. If there is a discrepancy, check the audit log before publishing.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p class="step-title">Toggle "Results Visibility" to Public</p>
+          <p class="step-desc">Click "Make Results Public". A green confirmation will appear. Results are now visible at <code>studelect.ng/{institution}/{org}</code>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p class="step-title">Announce the results</p>
+          <p class="step-desc">Share the results link in your official student channels. Students can verify their ballot on the Verify page using their ballot receipt hash.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>Result Verification</h3>
+    <p>
+      Every student who voted received a <strong>ballot receipt</strong> containing a unique
+      cryptographic hash. Students can go to
+      <code>studelect.ng/{institution}/elections/{electionId}/verify</code>
+      and enter their hash to confirm their vote was counted — without revealing who they voted for.
+      This is part of StudElect's end-to-end verifiability guarantee.
+    </p>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 13 ════════════════════════════════════════ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <span class="section-num">13</span>
+      <h2>Post-Election — Audit &amp; Record Keeping</h2>
+    </div>
+
+    <p>
+      After the election ends, StudElect maintains a full cryptographic audit trail.
+      This is important for transparency and for handling any petitions or disputes.
+    </p>
+
+    <h3>Audit Log</h3>
+    <p>
+      The Audit Log shows every ballot event in the order it occurred. Each entry contains:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Audit Field</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Timestamp</strong></td>
+          <td>The exact date and time the ballot was cast (to the millisecond)</td>
+        </tr>
+        <tr>
+          <td><strong>Ballot Hash</strong></td>
+          <td>A unique cryptographic fingerprint of this specific ballot</td>
+        </tr>
+        <tr>
+          <td><strong>Previous Hash</strong></td>
+          <td>The hash of the ballot before this one — forming an unbreakable chain</td>
+        </tr>
+        <tr>
+          <td><strong>Voter Token</strong></td>
+          <td>An anonymised token (not the student's matric number) proving this was a valid accredited voter</td>
+        </tr>
+        <tr>
+          <td><strong>Chain Integrity</strong></td>
+          <td>A verified/failed indicator showing whether the ballot chain is intact</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Downloading Records</h3>
+    <p>
+      Use the Export buttons on the Results and Voter Roll pages to download CSV files
+      of final results and voter participation records. Store these securely as your
+      official electoral archive for the session.
+    </p>
+
+    <div class="callout info">
+      <span class="callout-icon">&#128196;</span>
+      <div class="callout-body">
+        <div class="callout-label">Record Retention</div>
+        <p>Keep your downloaded results and audit exports for a minimum of one full academic session. These may be required by your institution's Student Affairs office or in the event of an electoral petition.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 14 ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">14</span>
+      <h2>Troubleshooting Common Issues</h2>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Likely Cause</th>
+          <th>Solution</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cannot log in</td>
+          <td>Wrong password or email</td>
+          <td>Try the exact credentials provided. Contact your platform administrator for a reset.</td>
+        </tr>
+        <tr>
+          <td>Dashboard shows no data</td>
+          <td>No students uploaded yet</td>
+          <td>Upload your voter roll Excel file under Voter Roll → Upload Roster.</td>
+        </tr>
+        <tr>
+          <td>Election won't go LIVE</td>
+          <td>License is not ACTIVE</td>
+          <td>Contact your StudElect platform representative. A payment hold may be blocking activation.</td>
+        </tr>
+        <tr>
+          <td>Student gets "Not found" at voter booth</td>
+          <td>Student not on voter roll</td>
+          <td>Check their matric number carefully. Add them manually if they are eligible.</td>
+        </tr>
+        <tr>
+          <td>Candidate not appearing on ballot</td>
+          <td>Candidate screening status is not "Cleared"</td>
+          <td>Go to Candidates, find the candidate, change status to Cleared.</td>
+        </tr>
+        <tr>
+          <td>Results page shows 0 votes</td>
+          <td>Results are hidden</td>
+          <td>Go to Election Settings and toggle Results Visibility to Public.</td>
+        </tr>
+        <tr>
+          <td>Student voted twice error</td>
+          <td>They already cast a ballot</td>
+          <td>The system enforces one-vote-per-matric. Check the audit log for confirmation. This cannot be reversed.</td>
+        </tr>
+        <tr>
+          <td>Excel upload fails</td>
+          <td>File format or structure issue</td>
+          <td>Ensure it is a .xlsx file (not .xls or .csv). Check that row 1 is headers and data starts at row 2. Remove merged cells.</td>
+        </tr>
+        <tr>
+          <td>Voter booth is very slow</td>
+          <td>High simultaneous traffic</td>
+          <td>The platform auto-scales. Advise students to try again in a moment. Stagger announcements so not all students rush to vote at once.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Contact Support</h3>
+    <p>
+      If you encounter an issue not covered here, contact your StudElect platform representative
+      via WhatsApp. Always provide:
+    </p>
+    <ul style="margin: 8px 0 0 20px; font-size: 13px; color: var(--ink2); line-height: 2;">
+      <li>Your institution and organisation name</li>
+      <li>The exact error message or screenshot</li>
+      <li>The approximate time the issue occurred</li>
+      <li>The matric number of the affected student (if applicable)</li>
+    </ul>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ SECTION 15 — QUICK REFERENCE ════════════════════════════════════════ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <span class="section-num">15</span>
+      <h2>Quick Reference Card</h2>
+    </div>
+
+    <div class="callout purple">
+      <span class="callout-icon">&#9889;</span>
+      <div class="callout-body">
+        <div class="callout-label">Print This Page</div>
+        <p>Cut out or keep this reference card handy on election day. It summarises the key URLs and workflow in one place.</p>
+      </div>
+    </div>
+
+    <h3>Key URLs</h3>
+
+    <table>
+      <thead>
+        <tr><th>Purpose</th><th>URL</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Your Admin Dashboard</td><td><code>studelect.ng/{institution}/admin</code></td></tr>
+        <tr><td>General Login</td><td><code>studelect.ng/admin/login</code></td></tr>
+        <tr><td>Voter Booth (share with students)</td><td><code>studelect.ng/{institution}/{org}</code></td></tr>
+        <tr><td>Results Page</td><td><code>studelect.ng/{institution}/{org}</code> (scroll to results)</td></tr>
+        <tr><td>Ballot Verification</td><td><code>studelect.ng/{institution}/elections/{id}/verify</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Election Day Timeline (Recommended)</h3>
+
+    <table>
+      <thead>
+        <tr><th>Time</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Day Before</strong></td><td>Complete voter roll upload, candidate setup, and election rules. Do a test run.</td></tr>
+        <tr><td><strong>30 min before open</strong></td><td>Log in, confirm all settings, share voter booth URL in student channels.</td></tr>
+        <tr><td><strong>Election Opens</strong></td><td>Set election to LIVE. Announce officially in all channels.</td></tr>
+        <tr><td><strong>Every 30 min</strong></td><td>Check telemetry dashboard. Send reminder messages if turnout is low.</td></tr>
+        <tr><td><strong>15 min before close</strong></td><td>Send final reminder to all students who have not yet voted.</td></tr>
+        <tr><td><strong>Election Closes</strong></td><td>Set election to ENDED. Screenshot results page.</td></tr>
+        <tr><td><strong>After closing</strong></td><td>Export results CSV. Review audit log. Publish results.</td></tr>
+        <tr><td><strong>Within 1 hour</strong></td><td>Make formal announcement of results in student channels with the results page link.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Election Status Flow</h3>
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 16px 0; font-size: 13px;">
+      <span class="badge pending" style="font-size: 12px; padding: 4px 12px;">PENDING</span>
+      <span style="color: var(--ink4); font-size: 18px; font-weight: 300;">→</span>
+      <span class="badge live" style="font-size: 12px; padding: 4px 12px;">LIVE</span>
+      <span style="color: var(--ink4); font-size: 18px; font-weight: 300;">→</span>
+      <span class="badge paused" style="font-size: 12px; padding: 4px 12px;">PAUSED</span>
+      <span style="color: var(--ink4); font-size: 18px; font-weight: 300;">→</span>
+      <span class="badge live" style="font-size: 12px; padding: 4px 12px;">LIVE</span>
+      <span style="color: var(--ink4); font-size: 18px; font-weight: 300;">→</span>
+      <span class="badge ended" style="font-size: 12px; padding: 4px 12px;">ENDED</span>
+    </div>
+
+    <div class="callout danger">
+      <span class="callout-icon">&#128680;</span>
+      <div class="callout-body">
+        <div class="callout-label">Irreversible Actions</div>
+        <p><strong>ENDED</strong> is permanent — once set, voting cannot reopen. Only set ENDED when you are certain all voting is complete. Also, ballots once cast cannot be undone.</p>
+      </div>
+    </div>
+
+    <h3>Emergency Contacts</h3>
+    <table>
+      <thead>
+        <tr><th>Issue Type</th><th>Contact</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Technical / Platform Issues</td><td>Your StudElect platform representative (WhatsApp)</td></tr>
+        <tr><td>License / Payment Holds</td><td>platform@studelect.ng</td></tr>
+        <tr><td>Privacy / Data Concerns</td><td>privacy@studelect.ng</td></tr>
+        <tr><td>Legal / Compliance</td><td>legal@studelect.ng</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ════════════════════════════════════════ DOC FOOTER ════════════════════════════════════════ -->
+  <div class="doc-footer">
+    <div class="doc-footer-brand">Stud<span>Elect</span> Nigeria</div>
+    <div>
+      <p>ELCOM Administrator Guide · Version 1.0 · September 2026</p>
+      <p>studelect.ng &nbsp;·&nbsp; support@studelect.ng &nbsp;·&nbsp; Confidential</p>
+    </div>
+  </div>
+
+</div><!-- /doc-wrap -->
+
+
+<!-- PRINT BUTTON (screen only) -->
+<button class="print-btn no-print" onclick="window.print()">
+  &#128438; Save as PDF
+</button>
+
+</body>
+</html>
