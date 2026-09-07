@@ -39,7 +39,7 @@
     "voterQuota": 500,
     "licenseStatus": "PENDING_PAYMENT",
     "paymentPlan": "SUG_UNLIMITED",
-    "agreedAmountNgn": 250000,
+    "agreedAmountNgn": 25000,
     "registeredVotersCount": 7,
     "ballotsCastCount": 0,
     "lastActivatedAt": "2026-08-29T20:55:00.010664+00:00"

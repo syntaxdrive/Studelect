@@ -32,8 +32,8 @@ export default function PricingPage() {
       id: "micro",
       name: "Micro Tier",
       badge: "Small Depts & Halls",
-      voters: "Up to 250 Voters",
-      votersCount: 250,
+      voters: "Up to 500 Voters",
+      votersCount: 500,
       priceNgn: "15,000",
       description: "Ideal for small academic departments, residential halls, and student clubs.",
       popular: false,
@@ -97,7 +97,7 @@ export default function PricingPage() {
     },
     {
       q: "What happens if more students register than our plan limit?",
-      a: "No problem at all. If your voter registration exceeds your initial tier (e.g. you picked 250 voters but 320 registered), you can simply message the SuperAdmin on WhatsApp to top up your quota with a quick difference payment without interrupting voting.",
+      a: "No problem at all. If your voter registration exceeds your initial tier (e.g. you picked 500 voters but 620 registered), you can simply message the SuperAdmin on WhatsApp to top up your quota with a quick difference payment without interrupting voting.",
     },
     {
       q: "Are there any hidden SMS or telecom charges?",

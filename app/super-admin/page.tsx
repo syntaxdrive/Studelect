@@ -17,6 +17,7 @@ import {
   updateOrgLicenseAction,
   extendOrgQuotaAction,
   resetOrgBallotsAction,
+  deleteWholeOrganizationAction,
   SuperAdminTelemetry,
   SuperAdminCampus,
   SuperAdminCommissioner,
@@ -171,6 +172,34 @@ export default function SuperAdminDashboard() {
       await loadData();
       setTimeout(() => setStatusMessage(null), 4000);
     }
+  };
+
+  // Permanently Delete Whole Organization & Associated Users
+  const handleDeleteOrganization = async (org: SuperAdminOrgLicense) => {
+    const promptMsg = `⚠️ DANGER: PERMANENT ORGANIZATION & USER DELETION\n\nYou are about to permanently delete "${org.orgName}" (${org.institutionName}).\n\nThis will PERMANENTLY ERASE:\n- The organization profile\n- All associated elections, candidate posts & ballots\n- All student voter accounts registered under this organization\n- All ELCOM commissioner admin accounts\n\nType DELETE below to confirm:`;
+    const confirmation = window.prompt(promptMsg);
+    if (confirmation !== "DELETE") {
+      if (confirmation !== null) {
+        alert("Deletion cancelled. You must type DELETE exactly to proceed.");
+      }
+      return;
+    }
+
+    setStatusMessage(`Deleting organization "${org.orgName}" and all associated users...`);
+    const res = await deleteWholeOrganizationAction(
+      org.id,
+      org.institutionSlug,
+      org.orgSlug,
+      org.orgName
+    );
+
+    if (res && res.success) {
+      setStatusMessage(res.message || `Deleted organization ${org.orgName}.`);
+      await loadData();
+    } else {
+      setStatusMessage(res?.message || "Failed to delete organization.");
+    }
+    setTimeout(() => setStatusMessage(null), 6000);
   };
 
   // Open Edit Org Modal
@@ -531,7 +560,7 @@ export default function SuperAdminDashboard() {
           <div className="grid grid-cols-1 gap-4">
             {filteredOrgs.map((org) => {
               const registered = org.registeredVotersCount || 0;
-              const quota = org.voterQuota || 250;
+              const quota = org.voterQuota || 500;
               const percentUsed = Math.min(100, Math.round((registered / quota) * 100));
 
               return (
@@ -590,11 +619,11 @@ export default function SuperAdminDashboard() {
                           <span>{percentUsed}% capacity utilized</span>
                           <button
                             type="button"
-                            onClick={() => handleExtendQuota(org.id, 250)}
+                            onClick={() => handleExtendQuota(org.id, 500)}
                             className="text-blue-600 font-bold hover:underline"
-                            title="Quickly add +250 voter capacity"
+                            title="Quickly add +500 voter capacity"
                           >
-                            +250 Bump
+                            +500 Bump
                           </button>
                         </div>
                       </div>
@@ -650,7 +679,7 @@ export default function SuperAdminDashboard() {
 
                   {/* Actions Toolbar */}
                   <div className="pt-3 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <a
                         href={getWhatsAppDealLink(org)}
                         target="_blank"
@@ -678,6 +707,16 @@ export default function SuperAdminDashboard() {
                       >
                         <Trash2 className="w-3 h-3 text-zinc-400" />
                         <span>Wipe Test Ballots</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteOrganization(org)}
+                        className="px-3 py-1.5 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
+                        title="Permanently delete this organization, all its elections, student voter accounts, and commissioner accounts"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete Org & Users</span>
                       </button>
                     </div>
 
@@ -926,12 +965,12 @@ export default function SuperAdminDashboard() {
                   </label>
                   <input
                     type="number"
-                    value={orgFormData.voterQuota || 250}
+                    value={orgFormData.voterQuota || 500}
                     onChange={(e) => setOrgFormData((prev) => ({ ...prev, voterQuota: Number(e.target.value) }))}
                     className="w-full px-3.5 py-2 rounded-lg border border-zinc-300 text-xs font-mono font-bold"
                   />
                   <div className="flex gap-1.5 mt-1.5">
-                    {[250, 1000, 3000, 10000].map((q) => (
+                    {[500, 1000, 3000, 10000].map((q) => (
                       <button
                         key={q}
                         type="button"

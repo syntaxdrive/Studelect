@@ -53,7 +53,7 @@ export interface SuperAdminOrgLicense {
   orgType: "DEPARTMENT" | "FACULTY" | "SUG" | "HALL";
   voterQuota: number;
   licenseStatus: "ACTIVE" | "PENDING_PAYMENT" | "LOCKED" | "CONCLUDED";
-  paymentPlan: "MICRO_250" | "DEPT_1000" | "FACULTY_3000" | "SUG_UNLIMITED" | "CUSTOM";
+  paymentPlan: "MICRO_500" | "MICRO_250" | "DEPT_1000" | "FACULTY_3000" | "SUG_UNLIMITED" | "CUSTOM";
   agreedAmountNgn: number;
   paymentProofNote?: string;
   contactAdminName?: string;
@@ -730,7 +730,7 @@ export async function extendOrgQuotaAction(id: string, additionalVoters: number)
   }
 
   if (index >= 0) {
-    list[index].voterQuota = (list[index].voterQuota || 250) + additionalVoters;
+    list[index].voterQuota = (list[index].voterQuota || 500) + additionalVoters;
     writeOrgLicensesStore(list);
     revalidatePath("/super-admin");
     return {
@@ -744,30 +744,222 @@ export async function extendOrgQuotaAction(id: string, additionalVoters: number)
 
 export async function resetOrgBallotsAction(instSlug: string, orgSlug: string) {
   try {
+    const cleanInst = (instSlug || "ui").toLowerCase().trim();
+    const cleanOrg = (orgSlug || "nesa").toLowerCase().trim();
+    const electionAliases = [
+      `elec-${cleanInst}-${cleanOrg}-2026`,
+      `elec-${cleanOrg}-2026`,
+      `elec-${cleanInst}-2026`,
+      cleanOrg,
+      `org-${cleanInst}-${cleanOrg}`,
+    ];
+
     const BALLOTS_FILE = path.join(DATA_DIR, "ballots-store.json");
     const CANDIDATES_FILE = path.join(DATA_DIR, "candidates-store.json");
     const VOTED_FILE = path.join(DATA_DIR, "voted-students-store.json");
 
     if (fs.existsSync(BALLOTS_FILE)) {
-      fs.writeFileSync(BALLOTS_FILE, JSON.stringify([], null, 2), "utf8");
+      const raw = fs.readFileSync(BALLOTS_FILE, "utf8");
+      const ballots = JSON.parse(raw);
+      const filtered = (ballots || []).filter((b: any) => !electionAliases.includes(b.electionId));
+      fs.writeFileSync(BALLOTS_FILE, JSON.stringify(filtered, null, 2), "utf8");
     }
     if (fs.existsSync(VOTED_FILE)) {
-      fs.writeFileSync(VOTED_FILE, JSON.stringify([], null, 2), "utf8");
+      const raw = fs.readFileSync(VOTED_FILE, "utf8");
+      const voted = JSON.parse(raw);
+      const filtered = (voted || []).filter((v: any) => !electionAliases.includes(v.electionId));
+      fs.writeFileSync(VOTED_FILE, JSON.stringify(filtered, null, 2), "utf8");
     }
     if (fs.existsSync(CANDIDATES_FILE)) {
       const raw = fs.readFileSync(CANDIDATES_FILE, "utf8");
       const store = JSON.parse(raw);
-      store.posts = (store.posts || []).map((p: any) => ({
-        ...p,
-        candidates: (p.candidates || []).map((c: any) => ({ ...c, voteCount: 0 })),
-      }));
+      store.posts = (store.posts || []).map((p: any) => {
+        if (electionAliases.includes(p.electionId)) {
+          return {
+            ...p,
+            candidates: (p.candidates || []).map((c: any) => ({ ...c, voteCount: 0 })),
+          };
+        }
+        return p;
+      });
       fs.writeFileSync(CANDIDATES_FILE, JSON.stringify(store, null, 2), "utf8");
     }
 
-    revalidatePath(`/${instSlug}/${orgSlug}`);
-    revalidatePath(`/${instSlug}/admin`);
-    return { success: true, message: `Mock test ballots reset to 0. Polling ledger is clean.` };
+    try {
+      await supabase.from("ballots").delete().in("election_id", electionAliases);
+    } catch (_) {}
+
+    revalidatePath(`/${cleanInst}/${cleanOrg}`);
+    revalidatePath(`/${cleanInst}/admin`);
+    return { success: true, message: `Ballots for ${cleanOrg.toUpperCase()} reset to 0. Polling ledger is clean.` };
   } catch (err: any) {
     return { success: false, message: err.message };
   }
 }
+
+/**
+ * Permanently delete a whole organization along with its elections, student voters,
+ * candidate nominations, ballots, and administrator accounts.
+ */
+export async function deleteWholeOrganizationAction(
+  orgId: string,
+  instSlug: string,
+  orgSlug: string,
+  orgName?: string
+) {
+  try {
+    const cleanInst = (instSlug || "ui").toLowerCase().trim();
+    const cleanOrg = (orgSlug || "").toLowerCase().trim();
+    const instId = `inst-${cleanInst}`;
+
+    const electionAliases = [
+      `elec-${cleanInst}-${cleanOrg}-2026`,
+      `elec-${cleanOrg}-2026`,
+      `elec-${cleanInst}-2026`,
+      cleanOrg,
+      `org-${cleanInst}-${cleanOrg}`,
+      orgId,
+    ];
+
+    // 1. Clean data/org-licenses-store.json
+    const licenses = readOrgLicensesStore();
+    const filteredLicenses = licenses.filter(
+      (o) => o.id !== orgId && !(o.orgSlug === cleanOrg && o.institutionSlug === cleanInst)
+    );
+    writeOrgLicensesStore(filteredLicenses);
+
+    // 2. Clean data/commissioner-assignments.json
+    const ASSIGNMENTS_FILE = path.join(DATA_DIR, "commissioner-assignments.json");
+    let removedEmails: string[] = [];
+    if (fs.existsSync(ASSIGNMENTS_FILE)) {
+      try {
+        const assignments = JSON.parse(fs.readFileSync(ASSIGNMENTS_FILE, "utf8"));
+        const newAssignments: Record<string, any> = {};
+        for (const [email, assn] of Object.entries<any>(assignments)) {
+          if (
+            assn?.orgId === orgId ||
+            assn?.orgId === cleanOrg ||
+            assn?.orgId === `org-${cleanInst}-${cleanOrg}`
+          ) {
+            removedEmails.push(email);
+          } else {
+            newAssignments[email] = assn;
+          }
+        }
+        fs.writeFileSync(ASSIGNMENTS_FILE, JSON.stringify(newAssignments, null, 2), "utf8");
+      } catch (_) {}
+    }
+
+    // 3. Clean data/election-rules-store.json
+    const RULES_FILE = path.join(DATA_DIR, "election-rules-store.json");
+    if (fs.existsSync(RULES_FILE)) {
+      try {
+        const rules = JSON.parse(fs.readFileSync(RULES_FILE, "utf8"));
+        for (const alias of electionAliases) {
+          delete rules[alias];
+        }
+        fs.writeFileSync(RULES_FILE, JSON.stringify(rules, null, 2), "utf8");
+      } catch (_) {}
+    }
+
+    // 4. Clean data/candidates-store.json
+    const CANDIDATES_FILE = path.join(DATA_DIR, "candidates-store.json");
+    if (fs.existsSync(CANDIDATES_FILE)) {
+      try {
+        const store = JSON.parse(fs.readFileSync(CANDIDATES_FILE, "utf8"));
+        store.posts = (store.posts || []).filter(
+          (p: any) => !electionAliases.includes(p.electionId)
+        );
+        fs.writeFileSync(CANDIDATES_FILE, JSON.stringify(store, null, 2), "utf8");
+      } catch (_) {}
+    }
+
+    // 5. Clean data/ballots-store.json
+    const BALLOTS_FILE = path.join(DATA_DIR, "ballots-store.json");
+    if (fs.existsSync(BALLOTS_FILE)) {
+      try {
+        const ballots = JSON.parse(fs.readFileSync(BALLOTS_FILE, "utf8"));
+        const filtered = (ballots || []).filter(
+          (b: any) => !electionAliases.includes(b.electionId)
+        );
+        fs.writeFileSync(BALLOTS_FILE, JSON.stringify(filtered, null, 2), "utf8");
+      } catch (_) {}
+    }
+
+    // 6. Clean data/voted-students-store.json
+    const VOTED_FILE = path.join(DATA_DIR, "voted-students-store.json");
+    if (fs.existsSync(VOTED_FILE)) {
+      try {
+        const voted = JSON.parse(fs.readFileSync(VOTED_FILE, "utf8"));
+        const filtered = (voted || []).filter(
+          (v: any) => !electionAliases.includes(v.electionId)
+        );
+        fs.writeFileSync(VOTED_FILE, JSON.stringify(filtered, null, 2), "utf8");
+      } catch (_) {}
+    }
+
+    // 7. Supabase Database Deletions
+    try {
+      // Find elections for this organization
+      const { data: dbElections } = await supabase
+        .from("elections")
+        .select("id")
+        .eq("organization_id", orgId);
+
+      const dbElecIds = (dbElections || []).map((e: any) => e.id);
+      const allElecIds = Array.from(new Set([...dbElecIds, ...electionAliases]));
+
+      if (allElecIds.length > 0) {
+        await supabase.from("ballots").delete().in("election_id", allElecIds);
+        await supabase.from("audit_logs").delete().in("election_id", allElecIds);
+        await supabase.from("posts").delete().in("election_id", allElecIds);
+        await supabase.from("elections").delete().in("id", allElecIds);
+      }
+
+      // Delete organization from Supabase
+      await supabase.from("organizations").delete().eq("id", orgId);
+      await supabase
+        .from("organizations")
+        .delete()
+        .eq("institution_id", instId)
+        .eq("slug", cleanOrg);
+
+      // Delete student users registered for this organization/department
+      if (cleanOrg) {
+        await supabase
+          .from("students")
+          .delete()
+          .eq("institution_id", instId)
+          .ilike("department", `%${cleanOrg}%`);
+      }
+
+      // Delete commissioner/admin users for this organization
+      if (removedEmails.length > 0) {
+        await supabase.from("admin_users").delete().in("email", removedEmails);
+      }
+      if (cleanOrg) {
+        await supabase
+          .from("admin_users")
+          .delete()
+          .eq("institution_id", instId)
+          .ilike("role", `%${cleanOrg}%`);
+      }
+    } catch (dbErr) {
+      console.warn("Supabase cascading deletion warning:", dbErr);
+    }
+
+    revalidatePath("/super-admin");
+    revalidatePath(`/${cleanInst}`);
+    revalidatePath(`/${cleanInst}/${cleanOrg}`);
+    revalidatePath(`/${cleanInst}/admin`);
+
+    return {
+      success: true,
+      message: `Organization "${orgName || cleanOrg.toUpperCase()}" and all associated election data and users deleted successfully.`,
+    };
+  } catch (err: any) {
+    console.error("deleteWholeOrganizationAction exception:", err);
+    return { success: false, message: err.message };
+  }
+}
+
