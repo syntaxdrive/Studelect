@@ -76,6 +76,12 @@ export default function SuperAdminDashboard() {
   const [isEditingOrgModalOpen, setIsEditingOrgModalOpen] = useState(false);
   const [orgFormData, setOrgFormData] = useState<Partial<SuperAdminOrgLicense>>({});
 
+  // Delete Org Confirmation Modal State
+  const [orgToDelete, setOrgToDelete] = useState<SuperAdminOrgLicense | null>(null);
+  const [isDeleteOrgModalOpen, setIsDeleteOrgModalOpen] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
+  const [isDeletingOrg, setIsDeletingOrg] = useState(false);
+
   // Campus Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCampus, setEditingCampus] = useState<SuperAdminCampus | null>(null);
@@ -174,32 +180,49 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  // Permanently Delete Whole Organization & Associated Users
-  const handleDeleteOrganization = async (org: SuperAdminOrgLicense) => {
-    const promptMsg = `⚠️ DANGER: PERMANENT ORGANIZATION & USER DELETION\n\nYou are about to permanently delete "${org.orgName}" (${org.institutionName}).\n\nThis will PERMANENTLY ERASE:\n- The organization profile\n- All associated elections, candidate posts & ballots\n- All student voter accounts registered under this organization\n- All ELCOM commissioner admin accounts\n\nType DELETE below to confirm:`;
-    const confirmation = window.prompt(promptMsg);
-    if (confirmation !== "DELETE") {
-      if (confirmation !== null) {
-        alert("Deletion cancelled. You must type DELETE exactly to proceed.");
+  // Open Delete Org Confirmation Modal
+  const handleOpenDeleteOrgModal = (org: SuperAdminOrgLicense) => {
+    setOrgToDelete(org);
+    setDeleteConfirmInput("");
+    setIsDeleteOrgModalOpen(true);
+  };
+
+  // Confirm Permanently Delete Whole Organization & Associated Users
+  const handleConfirmDeleteOrg = async () => {
+    if (!orgToDelete || deleteConfirmInput.trim() !== "DELETE") return;
+
+    const targetOrg = orgToDelete;
+    setIsDeletingOrg(true);
+    setStatusMessage(`Deleting organization "${targetOrg.orgName}" and all associated records...`);
+
+    // Immediate optimistic removal from current state
+    setOrgLicenses((prev) => prev.filter((o) => o.id !== targetOrg.id));
+    setIsDeleteOrgModalOpen(false);
+
+    try {
+      const res = await deleteWholeOrganizationAction(
+        targetOrg.id,
+        targetOrg.institutionSlug,
+        targetOrg.orgSlug,
+        targetOrg.orgName
+      );
+
+      if (res && res.success) {
+        setStatusMessage(res.message || `Deleted organization "${targetOrg.orgName}".`);
+      } else {
+        setStatusMessage(res?.message || "Failed to delete organization.");
       }
-      return;
-    }
-
-    setStatusMessage(`Deleting organization "${org.orgName}" and all associated users...`);
-    const res = await deleteWholeOrganizationAction(
-      org.id,
-      org.institutionSlug,
-      org.orgSlug,
-      org.orgName
-    );
-
-    if (res && res.success) {
-      setStatusMessage(res.message || `Deleted organization ${org.orgName}.`);
       await loadData();
-    } else {
-      setStatusMessage(res?.message || "Failed to delete organization.");
+    } catch (err: any) {
+      console.error("Error deleting organization:", err);
+      setStatusMessage(`Error: ${err?.message || "Failed to delete organization."}`);
+      await loadData();
+    } finally {
+      setIsDeletingOrg(false);
+      setOrgToDelete(null);
+      setDeleteConfirmInput("");
+      setTimeout(() => setStatusMessage(null), 6000);
     }
-    setTimeout(() => setStatusMessage(null), 6000);
   };
 
   // Open Edit Org Modal
@@ -722,8 +745,8 @@ export default function SuperAdminDashboard() {
 
                       <button
                         type="button"
-                        onClick={() => handleDeleteOrganization(org)}
-                        className="px-3 py-1.5 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
+                        onClick={() => handleOpenDeleteOrgModal(org)}
+                        className="px-3 py-1.5 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
                         title="Permanently delete this organization, all its elections, student voter accounts, and commissioner accounts"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -1395,6 +1418,89 @@ export default function SuperAdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Organization Confirmation Modal */}
+      {isDeleteOrgModalOpen && orgToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-rose-200 overflow-hidden animate-in fade-in zoom-in duration-150">
+            <div className="bg-rose-50 border-b border-rose-100 p-4 sm:p-5 flex items-start gap-3">
+              <div className="p-2.5 bg-rose-600 text-white rounded-lg shrink-0">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-rose-950">
+                  Permanently Erase Organization & Users
+                </h3>
+                <p className="text-xs text-rose-800 mt-1">
+                  This action is irreversible. All electoral data, student records, and administrator logins will be permanently wiped.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs text-zinc-600">
+              <div className="p-3.5 bg-zinc-50 rounded-lg border border-zinc-200 space-y-1.5">
+                <div className="flex justify-between items-center text-zinc-900 font-bold text-sm">
+                  <span>{orgToDelete.orgName}</span>
+                  <span className="text-xs font-mono uppercase bg-zinc-200 px-2 py-0.5 rounded text-zinc-700">
+                    {orgToDelete.orgSlug}
+                  </span>
+                </div>
+                <p className="text-zinc-500 text-[11px]">
+                  Institution: <strong className="text-zinc-800">{orgToDelete.institutionName}</strong> ({orgToDelete.institutionSlug.toUpperCase()})
+                </p>
+              </div>
+
+              <div className="space-y-1.5 text-zinc-700">
+                <p className="font-semibold text-zinc-900">The following records will be permanently erased:</p>
+                <ul className="list-disc pl-4 space-y-1 text-zinc-600">
+                  <li>Organization configuration and active license quota</li>
+                  <li>All past and active elections, ballot boxes, candidate posts and nominations</li>
+                  <li>All student voter accounts registered under this organization</li>
+                  <li>All ELCOM commissioner accounts assigned to this organization</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <label className="block font-semibold text-zinc-900">
+                  To confirm deletion, type <span className="font-mono text-rose-700 font-bold">DELETE</span> below:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Type DELETE to confirm"
+                  value={deleteConfirmInput}
+                  onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border border-zinc-300 font-mono text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                disabled={isDeletingOrg}
+                onClick={() => {
+                  setIsDeleteOrgModalOpen(false);
+                  setOrgToDelete(null);
+                  setDeleteConfirmInput("");
+                }}
+                className="px-4 py-2 border border-zinc-300 rounded-lg text-xs font-bold text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteConfirmInput.trim() !== "DELETE" || isDeletingOrg}
+                onClick={handleConfirmDeleteOrg}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeletingOrg ? "Erasing Organization..." : "Confirm & Delete Everything"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -33,6 +33,7 @@ export class SupabaseQueryBuilder {
   private isSingleResult: boolean = false;
   private sortColumn?: string;
   private sortAsc: boolean = true;
+  private limitCount?: number;
 
   constructor(table: string) {
     this.table = table;
@@ -45,6 +46,31 @@ export class SupabaseQueryBuilder {
 
   eq(column: string, value: any) {
     this.filters.push({ column, operator: "eq", value });
+    return this;
+  }
+
+  neq(column: string, value: any) {
+    this.filters.push({ column, operator: "neq", value });
+    return this;
+  }
+
+  in(column: string, values: any[]) {
+    this.filters.push({ column, operator: "in", value: `(${values.join(",")})` });
+    return this;
+  }
+
+  ilike(column: string, pattern: string) {
+    this.filters.push({ column, operator: "ilike", value: pattern });
+    return this;
+  }
+
+  or(filter: string) {
+    this.filters.push({ column: "or", operator: "", value: `(${filter})` });
+    return this;
+  }
+
+  limit(count: number) {
+    this.limitCount = count;
     return this;
   }
 
@@ -70,7 +96,11 @@ export class SupabaseQueryBuilder {
       url.searchParams.append("select", this.selectedColumns);
 
       for (const filter of this.filters) {
-        url.searchParams.append(filter.column, `${filter.operator}.${filter.value}`);
+        if (filter.column === "or") {
+          url.searchParams.append("or", filter.value);
+        } else {
+          url.searchParams.append(filter.column, `${filter.operator}.${filter.value}`);
+        }
       }
 
       if (this.sortColumn) {
@@ -78,6 +108,10 @@ export class SupabaseQueryBuilder {
           "order",
           `${this.sortColumn}.${this.sortAsc ? "asc" : "desc"}`
         );
+      }
+
+      if (this.limitCount !== undefined) {
+        url.searchParams.append("limit", String(this.limitCount));
       }
 
       const headers: Record<string, string> = {
@@ -186,11 +220,26 @@ export class SupabaseQueryBuilder {
     const table = this.table;
     const filters = [...this.filters];
 
-    return {
-      eq: async (column: string, value: any) => {
+    const executor = {
+      eq(column: string, value: any) {
+        filters.push({ column, operator: "eq", value });
+        return executor;
+      },
+      neq(column: string, value: any) {
+        filters.push({ column, operator: "neq", value });
+        return executor;
+      },
+      in(column: string, values: any[]) {
+        filters.push({ column, operator: "in", value: `(${values.join(",")})` });
+        return executor;
+      },
+      ilike(column: string, pattern: string) {
+        filters.push({ column, operator: "ilike", value: pattern });
+        return executor;
+      },
+      async then(resolve: (value: { data: any; error: any }) => void) {
         try {
           const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
-          url.searchParams.append(column, `eq.${value}`);
           for (const f of filters) {
             url.searchParams.append(f.column, `${f.operator}.${f.value}`);
           }
@@ -208,30 +257,48 @@ export class SupabaseQueryBuilder {
 
           if (!res.ok) {
             const errText = await res.text();
-            return { data: null, error: { message: errText } };
+            resolve({ data: null, error: { message: errText } });
+            return;
           }
 
           const data = await res.json();
-          return { data, error: null };
+          resolve({ data, error: null });
         } catch (err: any) {
-          return {
+          resolve({
             data: null,
             error: { message: err?.name === "AbortError" ? "Supabase update timed out." : err.message },
-          };
+          });
         }
       },
     };
+
+    return executor;
   }
 
   delete() {
     const table = this.table;
     const filters = [...this.filters];
 
-    return {
-      eq: async (column: string, value: any) => {
+    const executor = {
+      eq(column: string, value: any) {
+        filters.push({ column, operator: "eq", value });
+        return executor;
+      },
+      neq(column: string, value: any) {
+        filters.push({ column, operator: "neq", value });
+        return executor;
+      },
+      in(column: string, values: any[]) {
+        filters.push({ column, operator: "in", value: `(${values.join(",")})` });
+        return executor;
+      },
+      ilike(column: string, pattern: string) {
+        filters.push({ column, operator: "ilike", value: pattern });
+        return executor;
+      },
+      async then(resolve: (value: { data: any; error: any }) => void) {
         try {
           const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
-          url.searchParams.append(column, `eq.${value}`);
           for (const f of filters) {
             url.searchParams.append(f.column, `${f.operator}.${f.value}`);
           }
@@ -247,18 +314,21 @@ export class SupabaseQueryBuilder {
 
           if (!res.ok) {
             const errText = await res.text();
-            return { data: null, error: { message: errText } };
+            resolve({ data: null, error: { message: errText } });
+            return;
           }
 
-          return { data: true, error: null };
+          resolve({ data: true, error: null });
         } catch (err: any) {
-          return {
+          resolve({
             data: null,
             error: { message: err?.name === "AbortError" ? "Supabase delete timed out." : err.message },
-          };
+          });
         }
       },
     };
+
+    return executor;
   }
 }
 

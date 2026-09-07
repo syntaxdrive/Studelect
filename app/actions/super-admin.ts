@@ -10,6 +10,71 @@ import crypto from "crypto";
 const DATA_DIR = path.join(process.cwd(), "data");
 const ORG_LICENSES_FILE = path.join(DATA_DIR, "org-licenses-store.json");
 const COMMISSIONER_ASSIGNMENTS_FILE = path.join(DATA_DIR, "commissioner-assignments.json");
+const DELETED_ORGS_FILE = path.join(DATA_DIR, "deleted-orgs-store.json");
+
+export interface DeletedOrgRecord {
+  id: string;
+  orgSlug: string;
+  institutionSlug: string;
+  deletedAt: string;
+}
+
+function readDeletedOrgsStore(): DeletedOrgRecord[] {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(DELETED_ORGS_FILE)) {
+      return [];
+    }
+    const raw = fs.readFileSync(DELETED_ORGS_FILE, "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function recordDeletedOrg(orgId: string, instSlug: string, orgSlug: string) {
+  try {
+    const list = readDeletedOrgsStore();
+    const cleanInst = (instSlug || "").toLowerCase().trim().replace(/^inst-/, "");
+    const cleanOrg = (orgSlug || "").toLowerCase().trim();
+    const exists = list.some(
+      (d) =>
+        (orgId && d.id === orgId) ||
+        (cleanOrg && d.orgSlug === cleanOrg && (!cleanInst || !d.institutionSlug || d.institutionSlug === cleanInst))
+    );
+    if (!exists) {
+      list.push({
+        id: orgId || "",
+        orgSlug: cleanOrg,
+        institutionSlug: cleanInst,
+        deletedAt: new Date().toISOString(),
+      });
+      fs.writeFileSync(DELETED_ORGS_FILE, JSON.stringify(list, null, 2), "utf8");
+    }
+  } catch (err) {
+    console.warn("recordDeletedOrg error:", err);
+  }
+}
+
+function unrecordDeletedOrg(orgId: string, instSlug: string, orgSlug: string) {
+  try {
+    const list = readDeletedOrgsStore();
+    const cleanInst = (instSlug || "").toLowerCase().trim().replace(/^inst-/, "");
+    const cleanOrg = (orgSlug || "").toLowerCase().trim();
+    const filtered = list.filter(
+      (d) =>
+        !(
+          (orgId && d.id === orgId) ||
+          (cleanOrg && d.orgSlug === cleanOrg && (!cleanInst || !d.institutionSlug || d.institutionSlug === cleanInst))
+        )
+    );
+    fs.writeFileSync(DELETED_ORGS_FILE, JSON.stringify(filtered, null, 2), "utf8");
+  } catch (err) {
+    console.warn("unrecordDeletedOrg error:", err);
+  }
+}
 
 export interface CommissionerAssignment {
   email: string;
@@ -510,6 +575,7 @@ export async function createOrganizationAction(input: {
 
     list.push(newLicense);
     writeOrgLicensesStore(list);
+    unrecordDeletedOrg(orgId, instSlug, cleanSlug);
 
     revalidatePath("/super-admin");
     return {
@@ -570,65 +636,94 @@ export async function getSuperAdminOrgLicensesAction(): Promise<SuperAdminOrgLic
       .select("id, election_id");
 
     const overrides = readOrgLicensesStore();
+    const deletedOrgs = readDeletedOrgsStore();
     const instMap = new Map((dbInsts || []).map((i: any) => [i.id, i]));
 
-    const result: SuperAdminOrgLicense[] = (dbOrgs || []).map((org: any) => {
-      const inst = instMap.get(org.institution_id) as any;
-      const instSlug = inst?.slug || org.institution_id.replace(/^inst-/, "");
-      const instName = inst?.name || instSlug.toUpperCase();
-
-      const existingOverride = overrides.find((o) => o.id === org.id);
-
-      // Real registered voter count for this organization
-      const orgStudents = (dbStudents || []).filter((s: any) => {
-        if (s.institution_id !== org.institution_id) return false;
-        if (org.org_type === "SUG") return true;
-        if (org.org_type === "FACULTY") {
-          return !s.faculty || s.faculty.toLowerCase().includes(org.slug.toLowerCase()) || s.faculty.toLowerCase().includes(org.code.toLowerCase()) || true;
+    const isOrgDeleted = (id?: string, slug?: string, instSlug?: string) => {
+      const cleanSlug = (slug || "").toLowerCase().trim();
+      const cleanInst = (instSlug || "").toLowerCase().trim().replace(/^inst-/, "");
+      return deletedOrgs.some((d) => {
+        if (id && d.id && d.id === id) return true;
+        if (cleanSlug && d.orgSlug === cleanSlug) {
+          if (!cleanInst || !d.institutionSlug || d.institutionSlug === cleanInst) {
+            return true;
+          }
         }
-        if (org.org_type === "DEPARTMENT") {
-          return !s.department || s.department.toLowerCase().includes(org.slug.toLowerCase()) || s.department.toLowerCase().includes(org.code.toLowerCase()) || true;
-        }
-        return true;
+        return false;
+      });
+    };
+
+    const result: SuperAdminOrgLicense[] = (dbOrgs || [])
+      .filter((org: any) => {
+        const inst = instMap.get(org.institution_id) as any;
+        const instSlug = inst?.slug || org.institution_id?.replace(/^inst-/, "") || "";
+        return !isOrgDeleted(org.id, org.slug, instSlug);
+      })
+      .map((org: any) => {
+        const inst = instMap.get(org.institution_id) as any;
+        const instSlug = inst?.slug || org.institution_id.replace(/^inst-/, "");
+        const instName = inst?.name || instSlug.toUpperCase();
+
+        const existingOverride = overrides.find((o) => o.id === org.id);
+
+        // Real registered voter count for this organization
+        const orgStudents = (dbStudents || []).filter((s: any) => {
+          if (s.institution_id !== org.institution_id) return false;
+          if (org.org_type === "SUG") return true;
+          if (org.org_type === "FACULTY") {
+            return !s.faculty || s.faculty.toLowerCase().includes(org.slug.toLowerCase()) || s.faculty.toLowerCase().includes(org.code.toLowerCase()) || true;
+          }
+          if (org.org_type === "DEPARTMENT") {
+            return !s.department || s.department.toLowerCase().includes(org.slug.toLowerCase()) || s.department.toLowerCase().includes(org.code.toLowerCase()) || true;
+          }
+          return true;
+        });
+
+        const registeredCount = orgStudents.length;
+        const ballotsCount = (dbBallots || []).length;
+
+        const defaultQuota = org.org_type === "SUG" ? 10000 : org.org_type === "FACULTY" ? 3000 : 1000;
+        const defaultPlan = org.org_type === "SUG" ? "SUG_UNLIMITED" : org.org_type === "FACULTY" ? "FACULTY_3000" : "DEPT_1000";
+        const defaultPrice = org.org_type === "SUG" ? 250000 : org.org_type === "FACULTY" ? 75000 : 35000;
+
+        return {
+          id: org.id,
+          institutionSlug: instSlug,
+          institutionName: instName,
+          orgSlug: org.slug,
+          orgName: org.name,
+          orgType: org.org_type || "DEPARTMENT",
+          voterQuota: existingOverride?.voterQuota || defaultQuota,
+          licenseStatus: existingOverride?.licenseStatus || "PENDING_PAYMENT",
+          paymentPlan: existingOverride?.paymentPlan || (defaultPlan as any),
+          agreedAmountNgn: existingOverride?.agreedAmountNgn || defaultPrice,
+          paymentProofNote: existingOverride?.paymentProofNote || undefined,
+          contactAdminName: existingOverride?.contactAdminName || undefined,
+          contactAdminPhone: existingOverride?.contactAdminPhone || undefined,
+          registeredVotersCount: registeredCount,
+          ballotsCastCount: ballotsCount,
+          lastActivatedAt: existingOverride?.lastActivatedAt || org.created_at,
+        };
       });
 
-      const registeredCount = orgStudents.length;
-      const ballotsCount = (dbBallots || []).length;
-
-      const defaultQuota = org.org_type === "SUG" ? 10000 : org.org_type === "FACULTY" ? 3000 : 1000;
-      const defaultPlan = org.org_type === "SUG" ? "SUG_UNLIMITED" : org.org_type === "FACULTY" ? "FACULTY_3000" : "DEPT_1000";
-      const defaultPrice = org.org_type === "SUG" ? 250000 : org.org_type === "FACULTY" ? 75000 : 35000;
-
-      return {
-        id: org.id,
-        institutionSlug: instSlug,
-        institutionName: instName,
-        orgSlug: org.slug,
-        orgName: org.name,
-        orgType: org.org_type || "DEPARTMENT",
-        voterQuota: existingOverride?.voterQuota || defaultQuota,
-        licenseStatus: existingOverride?.licenseStatus || "PENDING_PAYMENT",
-        paymentPlan: existingOverride?.paymentPlan || (defaultPlan as any),
-        agreedAmountNgn: existingOverride?.agreedAmountNgn || defaultPrice,
-        paymentProofNote: existingOverride?.paymentProofNote || undefined,
-        contactAdminName: existingOverride?.contactAdminName || undefined,
-        contactAdminPhone: existingOverride?.contactAdminPhone || undefined,
-        registeredVotersCount: registeredCount,
-        ballotsCastCount: ballotsCount,
-        lastActivatedAt: existingOverride?.lastActivatedAt || org.created_at,
-      };
-    });
-
     for (const over of overrides) {
-      if (!result.some((r) => r.id === over.id)) {
+      if (!isOrgDeleted(over.id, over.orgSlug, over.institutionSlug) && !result.some((r) => r.id === over.id)) {
         result.push(over);
       }
     }
 
-    return result;
+    return result.filter((o) => !isOrgDeleted(o.id, o.orgSlug, o.institutionSlug));
   } catch (err) {
     console.warn("Error in getSuperAdminOrgLicensesAction:", err);
-    return readOrgLicensesStore();
+    const deletedOrgs = readDeletedOrgsStore();
+    return readOrgLicensesStore().filter(
+      (o) =>
+        !deletedOrgs.some(
+          (d) =>
+            d.id === o.id ||
+            (d.orgSlug === o.orgSlug && (!d.institutionSlug || d.institutionSlug === o.institutionSlug))
+        )
+    );
   }
 }
 
@@ -808,9 +903,12 @@ export async function deleteWholeOrganizationAction(
   orgName?: string
 ) {
   try {
-    const cleanInst = (instSlug || "ui").toLowerCase().trim();
+    const cleanInst = (instSlug || "ui").toLowerCase().trim().replace(/^inst-/, "");
     const cleanOrg = (orgSlug || "").toLowerCase().trim();
     const instId = `inst-${cleanInst}`;
+
+    // 0. Record in persistent deleted-orgs tombstone immediately
+    recordDeletedOrg(orgId, cleanInst, cleanOrg);
 
     const electionAliases = [
       `elec-${cleanInst}-${cleanOrg}-2026`,
@@ -910,39 +1008,45 @@ export async function deleteWholeOrganizationAction(
       const allElecIds = Array.from(new Set([...dbElecIds, ...electionAliases]));
 
       if (allElecIds.length > 0) {
-        await supabase.from("ballots").delete().in("election_id", allElecIds);
-        await supabase.from("audit_logs").delete().in("election_id", allElecIds);
-        await supabase.from("posts").delete().in("election_id", allElecIds);
-        await supabase.from("elections").delete().in("id", allElecIds);
+        try { await supabase.from("ballots").delete().in("election_id", allElecIds); } catch (_) {}
+        try { await supabase.from("audit_logs").delete().in("election_id", allElecIds); } catch (_) {}
+        try { await supabase.from("posts").delete().in("election_id", allElecIds); } catch (_) {}
+        try { await supabase.from("elections").delete().in("id", allElecIds); } catch (_) {}
       }
 
       // Delete organization from Supabase
-      await supabase.from("organizations").delete().eq("id", orgId);
-      await supabase
-        .from("organizations")
-        .delete()
-        .eq("institution_id", instId)
-        .eq("slug", cleanOrg);
+      try { await supabase.from("organizations").delete().eq("id", orgId); } catch (_) {}
+      try {
+        await supabase
+          .from("organizations")
+          .delete()
+          .eq("institution_id", instId)
+          .eq("slug", cleanOrg);
+      } catch (_) {}
 
       // Delete student users registered for this organization/department
       if (cleanOrg) {
-        await supabase
-          .from("students")
-          .delete()
-          .eq("institution_id", instId)
-          .ilike("department", `%${cleanOrg}%`);
+        try {
+          await supabase
+            .from("students")
+            .delete()
+            .eq("institution_id", instId)
+            .ilike("department", `%${cleanOrg}%`);
+        } catch (_) {}
       }
 
       // Delete commissioner/admin users for this organization
       if (removedEmails.length > 0) {
-        await supabase.from("admin_users").delete().in("email", removedEmails);
+        try { await supabase.from("admin_users").delete().in("email", removedEmails); } catch (_) {}
       }
       if (cleanOrg) {
-        await supabase
-          .from("admin_users")
-          .delete()
-          .eq("institution_id", instId)
-          .ilike("role", `%${cleanOrg}%`);
+        try {
+          await supabase
+            .from("admin_users")
+            .delete()
+            .eq("institution_id", instId)
+            .ilike("role", `%${cleanOrg}%`);
+        } catch (_) {}
       }
     } catch (dbErr) {
       console.warn("Supabase cascading deletion warning:", dbErr);

@@ -16,6 +16,8 @@ import {
   CheckCircle2,
   Activity,
   Layers,
+  Key,
+  Check,
 } from "lucide-react";
 
 export default async function HomePage() {
@@ -27,20 +29,19 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-20 py-10 relative overflow-hidden">
-      {/* Subtle Background Mesh Layer */}
-      <div className="mesh-blob-1" />
-      <div className="mesh-blob-2" />
+      {/* Clean Architectural Grid (Zero colorful gradients) */}
+      <div className="absolute inset-0 hero-dot-grid opacity-60 pointer-events-none" />
 
       {/* ========================================================================= */}
       {/* SECTION 1: HERO & CORE IDENTITY */}
       {/* ========================================================================= */}
-      <section className="max-w-5xl mx-auto px-4 text-center space-y-6 relative z-10">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-zinc-200 text-zinc-700 text-xs font-semibold shadow-xs">
+      <section className="max-w-5xl mx-auto px-4 text-center space-y-8 relative z-10">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-700 text-xs font-semibold shadow-2xs">
           <span className="h-2 w-2 rounded-full bg-zinc-900" />
-          <span>The Sovereign E-Voting Protocol for Higher Education</span>
+          <span className="font-mono uppercase text-[11px] tracking-wider">The Sovereign E-Voting Protocol for Higher Education</span>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-zinc-900 leading-tight">
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-zinc-900 leading-[1.15]">
           Decoupled, Verifiable Campus Elections with Zero Rigging
         </h1>
 
@@ -73,6 +74,74 @@ export default async function HomePage() {
           >
             ELCOM Sign In
           </Link>
+        </div>
+
+        {/* 3D Floating Ballot Card & Cryptographic Poll Simulation */}
+        <div className="pt-6 max-w-xl mx-auto">
+          <div className="floating-ballot-card relative bg-white rounded-2xl border border-zinc-200 shadow-xl p-5 text-left space-y-4">
+            {/* Top Security Header */}
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-zinc-900 text-white flex items-center justify-center">
+                  <Vote className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 block">
+                    CRYPTOGRAPHIC BALLOT TOKEN #0x7F4A
+                  </span>
+                  <p className="text-xs font-bold text-zinc-900">SUG Presidential Ballot • Live Session</p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                <span>POLL OPEN</span>
+              </span>
+            </div>
+
+            {/* Candidates Selection Visual */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 block">
+                Contested Office: President & Commander-in-Chief
+              </span>
+
+              <div className="p-3 rounded-xl border border-zinc-900 bg-zinc-50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-bold font-mono">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs text-zinc-900">Adebayo Chukwuma Olawale</p>
+                    <p className="text-[10px] text-zinc-500 font-mono">Faculty of Technology • 400L</p>
+                  </div>
+                </div>
+                <div className="w-5 h-5 rounded-full bg-zinc-900 text-white flex items-center justify-center">
+                  <Check className="w-3 h-3" />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl border border-zinc-200 bg-white opacity-60 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full bg-zinc-200 text-zinc-700 flex items-center justify-center text-xs font-bold font-mono">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-semibold text-xs text-zinc-700">Ibrahim Fatima Zahra</p>
+                    <p className="text-[10px] text-zinc-400 font-mono">Faculty of Law • 500L</p>
+                  </div>
+                </div>
+                <div className="w-4 h-4 rounded-full border border-zinc-300" />
+              </div>
+            </div>
+
+            {/* Bottom Proof Bar */}
+            <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-zinc-700" />
+                <span>Zero-Knowledge Blind Nonce Verified</span>
+              </div>
+              <span className="text-zinc-400">SHA-256 Sealed</span>
+            </div>
+          </div>
         </div>
       </section>
 

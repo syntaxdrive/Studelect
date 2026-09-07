@@ -333,7 +333,7 @@ export default function InstitutionAdminPage({
     } catch (_) {}
     getInstitutionBySlug(instSlug).then((inst) => {
       if (inst?.logoUrl) {
-        setOrgLogoUrl((prev) => prev || inst.logoUrl);
+        setOrgLogoUrl((prev) => prev || inst.logoUrl || null);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
