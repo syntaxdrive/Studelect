@@ -231,20 +231,43 @@ export async function getOrgVoterRollAction(institutionSlug: string) {
       return { success: false, students: [], message: error.message };
     }
 
-    const students = (data || []).map((s: any) => ({
-      id: s.id,
-      matricNo: s.matric_no,
-      fullName: s.full_name,
-      email: s.email || "",
-      phoneNumber: s.phone_number || "",
-      faculty: s.faculty || "",
-      department: s.department || "",
-      level: s.level || 100,
-      duesPaid: s.dues_paid !== false,
-      disciplinaryStatus: s.disciplinary_status || "GOOD_STANDING",
-      portalPin: s.portal_pin || "",
-      programType: s.program_type || "FULL_TIME",
-    }));
+    // Check which students are enrolled in admin_users
+    let adminEmailMap = new Map<string, any>();
+    let adminIdSet = new Set<string>();
+    try {
+      const { data: adminUsers } = await supabase
+        .from("admin_users")
+        .select("id, email, full_name, role")
+        .eq("institution_id", institutionId);
+
+      (adminUsers || []).forEach((a: any) => {
+        if (a.email) adminEmailMap.set(a.email.toLowerCase().trim(), a);
+        if (a.id) adminIdSet.add(a.id);
+      });
+    } catch (_) {}
+
+    const students = (data || []).map((s: any) => {
+      const sEmail = (s.email || "").toLowerCase().trim();
+      const adminEntry = adminEmailMap.get(sEmail) || (adminIdSet.has(`admin-${s.id}`) ? { role: "POLLING_AGENT" } : null);
+      const isAdmin = !!adminEntry;
+
+      return {
+        id: s.id,
+        matricNo: s.matric_no,
+        fullName: s.full_name,
+        email: s.email || "",
+        phoneNumber: s.phone_number || "",
+        faculty: s.faculty || "",
+        department: s.department || "",
+        level: s.level || 100,
+        duesPaid: s.dues_paid !== false,
+        disciplinaryStatus: s.disciplinary_status || "GOOD_STANDING",
+        portalPin: s.portal_pin || "",
+        programType: s.program_type || "FULL_TIME",
+        isAdmin,
+        adminRole: adminEntry?.role || (isAdmin ? "POLLING_AGENT" : null),
+      };
+    });
 
     return { success: true, students };
   } catch (err: any) {

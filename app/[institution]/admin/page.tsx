@@ -148,6 +148,7 @@ export default function InstitutionAdminPage({
   const [levelFilter, setLevelFilter] = useState<number | "ALL">("ALL");
   const [duesFilter, setDuesFilter] = useState<"ALL" | "PAID" | "UNPAID">("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "DISABLED">("ALL");
+  const [roleFilter, setRoleFilter] = useState<"ALL" | "ADMIN" | "STUDENT">("ALL");
   const [revealedPins, setRevealedPins] = useState<Set<string>>(new Set());
   const [voterSearch, setVoterSearch] = useState("");
 
@@ -326,6 +327,35 @@ export default function InstitutionAdminPage({
     setTimeout(() => setAdminActionMessage(null), 4000);
   };
 
+  const handleToggleAdminRole = async (student: any) => {
+    const isCurrentlyAdmin = !!student.isAdmin;
+    const confirmText = isCurrentlyAdmin
+      ? `Revoke Admin privileges for ${student.fullName} (${student.matricNo})?`
+      : `Promote ${student.fullName} (${student.matricNo}) to Polling Agent / ELCOM Admin? They can sign into the Admin Panel with password "elcom2026".`;
+
+    if (!confirm(confirmText)) return;
+
+    setVoterRoll((prev) =>
+      prev.map((s) => (s.id === student.id ? { ...s, isAdmin: !isCurrentlyAdmin } : s))
+    );
+
+    const res = await toggleStudentAdminRoleAction({
+      institutionSlug: instSlug,
+      matricNo: student.matricNo,
+      isAdmin: !isCurrentlyAdmin,
+      adminRole: "POLLING_OFFICER",
+    });
+
+    if (res.success) {
+      setAdminActionMessage(res.message);
+      loadVoterRoll();
+    } else {
+      setAdminActionMessage(res.message || "Failed to update admin role.");
+      loadVoterRoll();
+    }
+    setTimeout(() => setAdminActionMessage(null), 7000);
+  };
+
   const handleSaveRules = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingRules(true);
@@ -435,13 +465,18 @@ export default function InstitutionAdminPage({
       statusFilter === "ALL" ||
       (statusFilter === "ACTIVE" && isActive) ||
       (statusFilter === "DISABLED" && !isActive);
-    return matchSearch && matchLevel && matchDues && matchStatus;
+    const matchRole =
+      roleFilter === "ALL" ||
+      (roleFilter === "ADMIN" && s.isAdmin) ||
+      (roleFilter === "STUDENT" && !s.isAdmin);
+    return matchSearch && matchLevel && matchDues && matchStatus && matchRole;
   });
 
   // Stats
   const totalVoters = voterRoll.length;
   const duesPaidCount = voterRoll.filter((s) => s.duesPaid).length;
   const activeCount = voterRoll.filter((s) => s.disciplinaryStatus === "GOOD_STANDING").length;
+  const adminCount = voterRoll.filter((s) => s.isAdmin).length;
   const levelCounts: Record<number, number> = { 100: 0, 200: 0, 300: 0, 400: 0, 500: 0 };
   voterRoll.forEach((s) => {
     if (levelCounts[s.level] !== undefined) levelCounts[s.level]++;
@@ -1853,7 +1888,7 @@ export default function InstitutionAdminPage({
           )}
 
           {/* KPI Analytics Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-xs">
               <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider block">
                 Total Registered
@@ -1878,6 +1913,14 @@ export default function InstitutionAdminPage({
               </span>
               <p className="text-2xl font-black text-blue-600 mt-1">{activeCount}</p>
               <span className="text-[10px] text-zinc-400 mt-0.5 block">Good Standing</span>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-xs">
+              <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider block">
+                Promoted Admins
+              </span>
+              <p className="text-2xl font-black text-indigo-600 mt-1">{adminCount}</p>
+              <span className="text-[10px] text-zinc-400 mt-0.5 block">Polling Agents / ELCOM</span>
             </div>
 
             <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-xs">
@@ -1987,29 +2030,50 @@ export default function InstitutionAdminPage({
             </div>
 
             {/* Sub-Filters: Status & Active Filters Tag */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-zinc-200">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-semibold text-zinc-500 uppercase">Access:</span>
-                {(["ALL", "ACTIVE", "DISABLED"] as const).map((st) => (
-                  <button
-                    key={st}
-                    type="button"
-                    onClick={() => setStatusFilter(st)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
-                      statusFilter === st
-                        ? "bg-zinc-900 text-white"
-                        : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
-                    }`}
-                  >
-                    {st === "ALL" ? "All" : st === "ACTIVE" ? "🟢 Active" : "🔴 Disabled"}
-                  </button>
-                ))}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-zinc-200">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-zinc-500 uppercase">Access:</span>
+                  {(["ALL", "ACTIVE", "DISABLED"] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setStatusFilter(st)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
+                        statusFilter === st
+                          ? "bg-zinc-900 text-white"
+                          : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
+                      }`}
+                    >
+                      {st === "ALL" ? "All" : st === "ACTIVE" ? "🟢 Active" : "🔴 Disabled"}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-zinc-500 uppercase">Role:</span>
+                  {(["ALL", "ADMIN", "STUDENT"] as const).map((rf) => (
+                    <button
+                      key={rf}
+                      type="button"
+                      onClick={() => setRoleFilter(rf)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
+                        roleFilter === rf
+                          ? "bg-blue-600 text-white"
+                          : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
+                      }`}
+                    >
+                      {rf === "ALL" ? "All" : rf === "ADMIN" ? "🛡️ Admins Only" : "Students"}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {(voterSearch ||
                 levelFilter !== "ALL" ||
                 duesFilter !== "ALL" ||
-                statusFilter !== "ALL") && (
+                statusFilter !== "ALL" ||
+                roleFilter !== "ALL") && (
                 <button
                   type="button"
                   onClick={() => {
@@ -2017,6 +2081,7 @@ export default function InstitutionAdminPage({
                     setLevelFilter("ALL");
                     setDuesFilter("ALL");
                     setStatusFilter("ALL");
+                    setRoleFilter("ALL");
                   }}
                   className="text-[11px] text-red-600 hover:underline font-semibold flex items-center gap-1"
                 >
@@ -2054,6 +2119,7 @@ export default function InstitutionAdminPage({
                       <th className="px-4 py-3">Voter PIN</th>
                       <th className="px-4 py-3">Dues</th>
                       <th className="px-4 py-3">Access</th>
+                      <th className="px-4 py-3">Admin Role</th>
                       <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -2075,7 +2141,14 @@ export default function InstitutionAdminPage({
 
                           {/* Name, Dept, Email & Phone */}
                           <td className="px-4 py-3">
-                            <div className="font-bold text-zinc-900">{s.fullName}</div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-zinc-900">{s.fullName}</span>
+                              {s.isAdmin && (
+                                <span className="px-1.5 py-0.2 rounded bg-blue-600 text-white font-mono text-[9px] font-bold tracking-wider uppercase">
+                                  ADMIN
+                                </span>
+                              )}
+                            </div>
                             <div className="text-[11px] text-zinc-500">{s.department}</div>
                             <div className="flex flex-wrap items-center gap-2 mt-0.5">
                               {s.email ? (
@@ -2180,9 +2253,57 @@ export default function InstitutionAdminPage({
                             </button>
                           </td>
 
-                          {/* Actions: Reset PIN & Delete Voter */}
+                          {/* Admin Role Promotion Button */}
+                          <td className="px-4 py-3">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAdminRole(s)}
+                              className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold transition flex items-center gap-1.5 border shadow-2xs ${
+                                s.isAdmin
+                                  ? "bg-blue-50 text-blue-900 border-blue-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 group"
+                                  : "bg-zinc-100 text-zinc-700 border-zinc-300 hover:bg-zinc-900 hover:text-white hover:border-zinc-900"
+                              }`}
+                              title={
+                                s.isAdmin
+                                  ? "Active Admin. Click to revoke admin access."
+                                  : "Click to promote student to Polling Agent / ELCOM Admin"
+                              }
+                            >
+                              <ShieldCheck
+                                className={`w-3.5 h-3.5 ${
+                                  s.isAdmin
+                                    ? "text-blue-600 group-hover:text-rose-600"
+                                    : "text-zinc-500"
+                                }`}
+                              />
+                              {s.isAdmin ? (
+                                <>
+                                  <span className="group-hover:hidden">ADMIN</span>
+                                  <span className="hidden group-hover:inline">REVOKE</span>
+                                </>
+                              ) : (
+                                <span>PROMOTE</span>
+                              )}
+                            </button>
+                          </td>
+
+                          {/* Actions: Reset PIN, Promote & Delete Voter */}
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleAdminRole(s)}
+                                className={`px-2 py-1 rounded border font-bold text-[10px] transition flex items-center gap-1 ${
+                                  s.isAdmin
+                                    ? "border-blue-300 bg-blue-50 text-blue-800 hover:bg-rose-50 hover:text-rose-700"
+                                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                                }`}
+                                title={s.isAdmin ? "Revoke Admin access" : "Promote to Admin"}
+                              >
+                                <ShieldCheck className="w-3 h-3" />
+                                <span>{s.isAdmin ? "Admin" : "Promote"}</span>
+                              </button>
+
                               <button
                                 type="button"
                                 onClick={() => handleResetPin(s.id)}
