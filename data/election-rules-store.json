@@ -1,21 +1,4 @@
 {
-  "elec-unilag-2026": {
-    "electionId": "elec-unilag-2026",
-    "status": "PAUSED",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
   "unilag": {
     "electionId": "unilag",
     "status": "PAUSED",
@@ -33,77 +16,9 @@
     "authMode": "PIN_SLIP",
     "resultsVisibility": "LIVE"
   },
-  "elec-unilag-nacos-2026": {
-    "electionId": "elec-unilag-nacos-2026",
-    "status": "PAUSED",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "nacos": {
-    "electionId": "nacos",
-    "status": "PAUSED",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "elec-nacos-2026": {
-    "electionId": "elec-nacos-2026",
-    "status": "PAUSED",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "org-unilag-nacos": {
-    "electionId": "org-unilag-nacos",
-    "status": "PAUSED",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
   "org": {
     "electionId": "org",
-    "status": "PAUSED",
+    "status": "LIVE",
     "requireDuesPayment": true,
     "requireGoodDisciplinaryStanding": true,
     "requireFullTimeOnly": false,
@@ -120,24 +35,7 @@
   },
   "elec-org-2026": {
     "electionId": "elec-org-2026",
-    "status": "PAUSED",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "elec-ui-2026": {
-    "electionId": "elec-ui-2026",
-    "status": "PAUSED",
+    "status": "LIVE",
     "requireDuesPayment": true,
     "requireGoodDisciplinaryStanding": true,
     "requireFullTimeOnly": false,
@@ -154,144 +52,7 @@
   },
   "ui": {
     "electionId": "ui",
-    "status": "PAUSED",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "elec-ui-nesa-2026": {
-    "electionId": "elec-ui-nesa-2026",
     "status": "LIVE",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE",
-    "isPaymentHalted": false
-  },
-  "nesa": {
-    "electionId": "nesa",
-    "status": "LIVE",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "elec-nesa-2026": {
-    "electionId": "elec-nesa-2026",
-    "status": "LIVE",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "org-ui-nesa": {
-    "electionId": "org-ui-nesa",
-    "status": "LIVE",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "elec-ui-sug-2026": {
-    "electionId": "elec-ui-sug-2026",
-    "status": "PAUSED",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "sug": {
-    "electionId": "sug",
-    "status": "PAUSED",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "elec-sug-2026": {
-    "electionId": "elec-sug-2026",
-    "status": "PAUSED",
-    "requireDuesPayment": true,
-    "requireGoodDisciplinaryStanding": true,
-    "requireFullTimeOnly": false,
-    "requireSessionRegistration": true,
-    "allowedLevels": [
-      100,
-      200,
-      300,
-      400,
-      500
-    ],
-    "authMode": "PIN_SLIP",
-    "resultsVisibility": "LIVE"
-  },
-  "org-ui-sug": {
-    "electionId": "org-ui-sug",
-    "status": "PAUSED",
     "requireDuesPayment": true,
     "requireGoodDisciplinaryStanding": true,
     "requireFullTimeOnly": false,

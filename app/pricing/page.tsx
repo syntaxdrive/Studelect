@@ -20,10 +20,10 @@ import {
 
 export default function PricingPage() {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
-  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2348000000000";
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2349164221215";
 
   const getWhatsAppLink = (planName: string, voters: string, price: string) => {
-    const text = `Hello StudElect Support, I am an ELCOM Chairman / Student Executive. I would like to activate the ${planName} (${voters} at ${price}) for our upcoming campus election.`;
+    const text = `*ELECTION ACTIVATION INQUIRY*\n\nHello SuperAdmin, I am an ELCOM Chairman / Student Executive.\n\nWe would like to activate the *${planName}* (${voters} at ₦${price}) for our upcoming campus election.\n\nKindly send us payment instructions and onboarding clearance.`;
     return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
   };
 

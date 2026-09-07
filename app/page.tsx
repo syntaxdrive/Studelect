@@ -20,9 +20,9 @@ import {
 
 export default async function HomePage() {
   const institutions = await getInstitutions();
-  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2348000000000";
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2349164221215";
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-    "Hello StudElect Support, I am an ELCOM Chairman / Student Executive. I would like to inquire about activating our upcoming election."
+    "*STUDENT ELECTION INQUIRY*\n\nHello SuperAdmin, I am reaching out from StudElect.ng. I am an ELCOM Chairman / Student Union Executive and would like to inquire about activating our upcoming campus election."
   )}`;
 
   return (

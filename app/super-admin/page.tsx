@@ -395,6 +395,17 @@ export default function SuperAdminDashboard() {
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           </button>
 
+          <a
+            href="https://wa.me/2349164221215"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-2 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+            title="SuperAdmin WhatsApp Line: 09164221215"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+            <span>WA: 09164221215</span>
+          </a>
+
           <Link
             href="/pricing"
             target="_blank"

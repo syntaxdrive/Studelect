@@ -1,31 +1,3 @@
 {
-  "posts": [
-    {
-      "id": "post-1",
-      "electionId": "elec-ui-2026",
-      "title": "President",
-      "description": "Executive President of the Association",
-      "maxSelections": 1,
-      "allowedLevels": [],
-      "candidates": []
-    },
-    {
-      "id": "post-2",
-      "electionId": "elec-ui-2026",
-      "title": "Vice President",
-      "description": "Executive Vice President",
-      "maxSelections": 1,
-      "allowedLevels": [],
-      "candidates": []
-    },
-    {
-      "id": "post-3",
-      "electionId": "elec-ui-2026",
-      "title": "General Secretary",
-      "description": "Chief Secretariat Administrator",
-      "maxSelections": 1,
-      "allowedLevels": [],
-      "candidates": []
-    }
-  ]
+  "posts": []
 }

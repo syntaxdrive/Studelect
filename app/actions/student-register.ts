@@ -661,3 +661,128 @@ export async function getElectionRulesAction(
   };
 }
 
+/**
+ * Get full system and ballot audit logs for the admin Logs tab
+ */
+export async function getElectionAuditLogsAction(electionId: string, instSlug?: string) {
+  try {
+    const cleanElection = electionId || `elec-${instSlug || "ui"}-2026`;
+    const cleanInst = (instSlug || "ui").toLowerCase().trim();
+
+    // 1. Fetch from Supabase audit_logs table
+    let dbLogs: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from("audit_logs")
+        .select("*")
+        .or(`election_id.eq.${cleanElection},election_id.ilike.%${cleanInst}%`)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (!error && data) {
+        dbLogs = data.map((l: any) => ({
+          id: l.id,
+          timestamp: l.created_at || new Date().toISOString(),
+          action: l.action || "AUDIT_EVENT",
+          actorRole: l.actor_role || "SYSTEM",
+          actorName: l.actor_name || "System Protocol",
+          details: l.details || {},
+          ipHash: l.ip_hash || "0x_ANONYMOUS_IP",
+          electionId: l.election_id || cleanElection,
+        }));
+      }
+    } catch (_) {}
+
+    // 2. Fetch runtime ballots from data/ballots-store.json for cryptographic vote logs
+    let electionBallots: any[] = [];
+    try {
+      const ballotsFile = path.join(DATA_DIR, "ballots-store.json");
+      if (fs.existsSync(ballotsFile)) {
+        const raw = fs.readFileSync(ballotsFile, "utf8");
+        const allBallots = JSON.parse(raw);
+        if (Array.isArray(allBallots)) {
+          electionBallots = allBallots.filter(
+            (b: any) =>
+              b.electionId === cleanElection ||
+              b.institutionId === `inst-${cleanInst}` ||
+              (b.id && b.id.toLowerCase().includes(cleanInst))
+          );
+        }
+      }
+    } catch (_) {}
+
+    const ballotLogs = electionBallots.map((b: any) => ({
+      id: `ballot-log-${b.id}`,
+      timestamp: b.castAt || new Date().toISOString(),
+      action: "BALLOT_CAST",
+      actorRole: "VOTER",
+      actorName: `Verified Voter (${b.voterLevel || 300}L)`,
+      details: {
+        receiptHash: b.receiptHash,
+        blockHash: b.blockHash,
+        officesVotedCount: Object.keys(b.selections || {}).length,
+      },
+      ipHash: "0x_ANONYMOUS_ENCRYPTED",
+      electionId: b.electionId || cleanElection,
+    }));
+
+    // Merge & sort chronologically descending
+    const combined = [...dbLogs, ...ballotLogs].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    return {
+      success: true,
+      logs: combined,
+      count: combined.length,
+    };
+  } catch (err: any) {
+    console.warn("getElectionAuditLogsAction error:", err);
+    return { success: false, logs: [], count: 0, message: err.message };
+  }
+}
+
+/**
+ * Get current organization quota and license metadata for ELCOM support
+ */
+export async function getOrgLicenseInfoAction(orgSlug: string, instSlug: string) {
+  try {
+    const cleanOrg = (orgSlug || "nesa").toLowerCase().trim();
+    const cleanInst = (instSlug || "ui").toLowerCase().trim();
+    let license: any = null;
+
+    const licensesFile = path.join(DATA_DIR, "org-licenses-store.json");
+    if (fs.existsSync(licensesFile)) {
+      const raw = fs.readFileSync(licensesFile, "utf8");
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        license = list.find(
+          (l: any) =>
+            l.institutionSlug?.toLowerCase() === cleanInst &&
+            l.orgSlug?.toLowerCase() === cleanOrg
+        );
+      }
+    }
+
+    return {
+      success: true,
+      license: license || {
+        voterQuota: 500,
+        registeredVotersCount: 0,
+        licenseStatus: "ACTIVE",
+        orgName: cleanOrg.toUpperCase(),
+        institutionName: cleanInst.toUpperCase(),
+      },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      license: {
+        voterQuota: 500,
+        registeredVotersCount: 0,
+        licenseStatus: "ACTIVE",
+      },
+    };
+  }
+}
+

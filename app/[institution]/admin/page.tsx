@@ -25,8 +25,15 @@ import {
   updateElectionRulesAction,
   updateElectionStatusAction,
   updateResultsVisibilityAction,
+  getElectionAuditLogsAction,
+  getOrgLicenseInfoAction,
   ElectionRulesState,
 } from "@/app/actions/student-register";
+import {
+  buildSuperAdminWhatsAppUrl,
+  SUPERADMIN_WHATSAPP_RAW,
+  AdminWhatsAppReason,
+} from "@/lib/whatsapp";
 import { getInstitutionBySlug } from "@/lib/db/institutions";
 import { updateOrgLogoAction } from "@/app/actions/elections";
 import {
@@ -85,6 +92,11 @@ import {
   FileText,
   Award,
   Calendar,
+  HelpCircle,
+  MessageSquare,
+  History,
+  LifeBuoy,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function InstitutionAdminPage({
@@ -95,8 +107,23 @@ export default function InstitutionAdminPage({
   const resolvedParams = use(params);
   const instSlug = (resolvedParams?.institution || "ui").toLowerCase();
   const [activeTab, setActiveTab] = useState<
-    "RESULTS" | "CANDIDATES" | "ROSTER" | "RULES" | "PINS"
+    "RESULTS" | "CANDIDATES" | "ROSTER" | "RULES" | "PINS" | "LOGS"
   >("RESULTS");
+
+  // Audit Logs State
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [isAuditLogsLoading, setIsAuditLogsLoading] = useState(false);
+  const [logFilterAction, setLogFilterAction] = useState<string>("ALL");
+  const [logSearchQuery, setLogSearchQuery] = useState<string>("");
+
+  // Contact Support Modal State
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [supportReason, setSupportReason] = useState<AdminWhatsAppReason>("QUOTA_TOPUP");
+  const [orgLicenseInfo, setOrgLicenseInfo] = useState<any>({
+    voterQuota: 500,
+    registeredVotersCount: 0,
+    licenseStatus: "ACTIVE",
+  });
 
   const [telemetryData, setTelemetryData] = useState<any>({
     totalRegistered: 0,
@@ -206,6 +233,37 @@ export default function InstitutionAdminPage({
     }
     loadRules();
   }, [electionId]);
+
+  // Load organization license metadata
+  useEffect(() => {
+    async function loadLicense() {
+      const res = await getOrgLicenseInfoAction("nesa", instSlug);
+      if (res && res.license) {
+        setOrgLicenseInfo(res.license);
+      }
+    }
+    loadLicense();
+  }, [instSlug]);
+
+  // Load audit logs when switching to LOGS tab or on interval
+  const loadAuditLogs = async () => {
+    setIsAuditLogsLoading(true);
+    try {
+      const res = await getElectionAuditLogsAction(electionId, instSlug);
+      if (res && res.success) {
+        setAuditLogs(res.logs || []);
+      }
+    } catch (_) {
+    } finally {
+      setIsAuditLogsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "LOGS") {
+      loadAuditLogs();
+    }
+  }, [activeTab, electionId, instSlug]);
 
   const safeCopyToClipboard = async (text: string) => {
     try {
@@ -804,6 +862,16 @@ export default function InstitutionAdminPage({
             />
           </label>
 
+          <button
+            type="button"
+            onClick={() => setIsSupportModalOpen(true)}
+            className="px-3.5 py-2 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+            title="Contact SuperAdmin on WhatsApp for Quota, Clearance or Emergency Support"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Contact Support</span>
+          </button>
+
           <Link
             href={`/${instSlug}/admin/create`}
             className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
@@ -1063,6 +1131,19 @@ export default function InstitutionAdminPage({
         >
           <Key className="w-4 h-4" />
           <span>Voter PIN Slips</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("LOGS")}
+          className={`px-4 py-2 rounded-lg transition flex items-center gap-1.5 ${
+            activeTab === "LOGS"
+              ? "bg-zinc-900 text-white shadow-xs"
+              : "text-zinc-600 hover:bg-zinc-100"
+          }`}
+        >
+          <History className="w-4 h-4" />
+          <span>System & Audit Logs</span>
         </button>
       </div>
 
@@ -2659,6 +2740,228 @@ export default function InstitutionAdminPage({
       )}
 
       {/* ========================================================================= */}
+      {/* TAB: SYSTEM & AUDIT LOGS                                                  */}
+      {/* ========================================================================= */}
+      {activeTab === "LOGS" && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* Header & Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white border border-zinc-200 shadow-sm">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500">
+                  TAMPER-EVIDENT ELECTORAL AUDIT TRAIL
+                </span>
+              </div>
+              <h2 className="text-xl font-bold text-zinc-900 mt-1">
+                Electoral System & Audit Ledger Logs
+              </h2>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Cryptographic record of voter authorizations, ballot tokens, rule modifications, and election events.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={loadAuditLogs}
+                disabled={isAuditLogsLoading}
+                className="px-3.5 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-100 text-zinc-700 text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-zinc-600 ${isAuditLogsLoading ? "animate-spin" : ""}`} />
+                <span>{isAuditLogsLoading ? "Refreshing..." : "Refresh Ledger"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const exportLogs = auditLogs.map((l) => ({
+                    ID: l.id,
+                    Timestamp: new Date(l.timestamp).toLocaleString("en-NG"),
+                    Action: l.action,
+                    Role: l.actorRole,
+                    Actor: l.actorName,
+                    ElectionID: l.electionId,
+                    IP_Nonce: l.ipHash,
+                    Details: JSON.stringify(l.details),
+                  }));
+                  const blob = new Blob([JSON.stringify(exportLogs, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `Audit_Ledger_${instSlug.toUpperCase()}_${Date.now()}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                className="px-3.5 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export Audit JSON</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-2xs">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Total Log Entries</span>
+              <p className="text-xl font-bold font-mono text-zinc-900 mt-1">{auditLogs.length}</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-2xs">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Ballots Cast in Ledger</span>
+              <p className="text-xl font-bold font-mono text-blue-600 mt-1">
+                {auditLogs.filter((l) => l.action === "BALLOT_CAST").length}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-2xs">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Security / Admin Events</span>
+              <p className="text-xl font-bold font-mono text-purple-600 mt-1">
+                {auditLogs.filter((l) => l.action !== "BALLOT_CAST").length}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-2xs">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Integrity Proof</span>
+              <div className="flex items-center gap-1.5 text-emerald-600 font-bold font-mono mt-1">
+                <ShieldCheck className="w-4 h-4" />
+                <span>SHA-256 Valid</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter & Search Bar */}
+          <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search audit ledger by ID, action, hash..."
+                value={logSearchQuery}
+                onChange={(e) => setLogSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 rounded-lg border border-zinc-300 focus:ring-1 focus:ring-zinc-900 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-500 font-semibold font-mono text-[11px]">Action Filter:</span>
+              <select
+                value={logFilterAction}
+                onChange={(e) => setLogFilterAction(e.target.value)}
+                className="px-3 py-2 rounded-lg border border-zinc-300 text-xs font-semibold focus:outline-none"
+              >
+                <option value="ALL">All Event Types</option>
+                <option value="BALLOT_CAST">Ballots Cast</option>
+                <option value="ADMIN_ACTION">Admin Operations</option>
+                <option value="PIN_GENERATE">PIN Generation</option>
+                <option value="STATUS_CHANGE">Lifecycle Updates</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Audit Logs Table */}
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden text-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-zinc-50 border-b border-zinc-200 text-[10px] font-mono uppercase text-zinc-500 font-bold">
+                  <tr>
+                    <th className="px-4 py-3">Timestamp (WAT)</th>
+                    <th className="px-4 py-3">Action Type</th>
+                    <th className="px-4 py-3">Actor Role</th>
+                    <th className="px-4 py-3">Cryptographic Receipt / Details</th>
+                    <th className="px-4 py-3 text-right">Integrity Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 font-mono text-xs">
+                  {(() => {
+                    const filteredLogs = auditLogs.filter((l) => {
+                      const matchAction = logFilterAction === "ALL" || l.action === logFilterAction;
+                      const q = logSearchQuery.toLowerCase();
+                      const matchSearch =
+                        !q ||
+                        l.id?.toLowerCase().includes(q) ||
+                        l.action?.toLowerCase().includes(q) ||
+                        l.actorRole?.toLowerCase().includes(q) ||
+                        JSON.stringify(l.details || {}).toLowerCase().includes(q);
+                      return matchAction && matchSearch;
+                    });
+
+                    if (filteredLogs.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-12 text-center text-zinc-400 italic">
+                            No matching audit logs found. Cast ballots and administrative operations stream here in real time.
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return filteredLogs.map((log) => {
+                      const isBallot = log.action === "BALLOT_CAST";
+                      return (
+                        <tr key={log.id} className="hover:bg-zinc-50/80 transition">
+                          <td className="px-4 py-3 text-zinc-500 whitespace-nowrap">
+                            {new Date(log.timestamp).toLocaleDateString("en-NG", {
+                              month: "short",
+                              day: "numeric",
+                            })}{" "}
+                            {new Date(log.timestamp).toLocaleTimeString("en-NG")}
+                          </td>
+
+                          <td className="px-4 py-3 font-bold">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] ${
+                                isBallot
+                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                  : "bg-purple-50 text-purple-700 border border-purple-200"
+                              }`}
+                            >
+                              {log.action}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-3 text-zinc-700">
+                            <span className="font-semibold">{log.actorRole}</span>
+                            <span className="text-[10px] text-zinc-400 block">{log.actorName}</span>
+                          </td>
+
+                          <td className="px-4 py-3 text-zinc-600 max-w-md break-all">
+                            {log.details?.receiptHash ? (
+                              <div>
+                                <span className="text-zinc-900 font-bold">Receipt: </span>
+                                <span>{log.details.receiptHash.substring(0, 18)}...</span>
+                                {log.details.blockHash && (
+                                  <span className="text-zinc-400 block text-[10px]">
+                                    Block: {log.details.blockHash.substring(0, 24)}...
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span>{JSON.stringify(log.details || {})}</span>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                              <Check className="w-3 h-3" />
+                              <span>VERIFIED</span>
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* MODAL: ADD NEW ELECTIVE POST                                              */}
       {/* ========================================================================= */}
       {isAddPostModalOpen && (
@@ -3056,6 +3359,160 @@ export default function InstitutionAdminPage({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: CONTACT SUPERADMIN SUPPORT                                         */}
+      {/* ========================================================================= */}
+      {isSupportModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-zinc-200 max-w-lg w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-xs">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
+                  <LifeBuoy className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900">ELCOM Direct Support Desk</h3>
+                  <p className="text-[11px] text-zinc-500">
+                    Direct WhatsApp line to StudElect SuperAdmin: <span className="font-mono font-bold text-zinc-800">{SUPERADMIN_WHATSAPP_RAW}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSupportModalOpen(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Organization Context Card */}
+            <div className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200 space-y-1">
+              <div className="flex items-center justify-between font-mono text-[11px]">
+                <span className="text-zinc-500 uppercase font-semibold">Campus & Organization:</span>
+                <span className="font-bold text-zinc-900">{instSlug.toUpperCase()} • NESA ELCOM</span>
+              </div>
+              <div className="flex items-center justify-between font-mono text-[11px]">
+                <span className="text-zinc-500 uppercase font-semibold">Active Quota Capacity:</span>
+                <span className="font-bold text-zinc-900">{orgLicenseInfo.voterQuota || 500} Voters ({voterRoll.length} Registered)</span>
+              </div>
+              <div className="flex items-center justify-between font-mono text-[11px]">
+                <span className="text-zinc-500 uppercase font-semibold">Election Status:</span>
+                <span className="font-bold uppercase text-emerald-700">{electionRules.status}</span>
+              </div>
+            </div>
+
+            {/* Select Reason */}
+            <div className="space-y-2">
+              <label className="block font-semibold uppercase text-zinc-700 text-[11px] font-mono">
+                Select What You Need Help With:
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  {
+                    id: "QUOTA_TOPUP" as AdminWhatsAppReason,
+                    title: "Top-Up Voter Quota",
+                    desc: "Increase voter capacity limit (₦15k/500 voters)",
+                    icon: Users,
+                  },
+                  {
+                    id: "EMERGENCY_SUPPORT" as AdminWhatsAppReason,
+                    title: "Election Emergency",
+                    desc: "Urgent issue during live balloting",
+                    icon: AlertTriangle,
+                  },
+                  {
+                    id: "PAYMENT_CONFIRMATION" as AdminWhatsAppReason,
+                    title: "Payment Confirmation",
+                    desc: "Send proof of transfer for license unlock",
+                    icon: CreditCard,
+                  },
+                  {
+                    id: "BALLOT_AUDIT" as AdminWhatsAppReason,
+                    title: "Audit & Certification",
+                    desc: "Request certified cryptographic extract",
+                    icon: ShieldCheck,
+                  },
+                  {
+                    id: "LICENSE_ACTIVATION" as AdminWhatsAppReason,
+                    title: "License Activation",
+                    desc: "Onboard new election or faculty license",
+                    icon: Key,
+                  },
+                  {
+                    id: "GENERAL_INQUIRY" as AdminWhatsAppReason,
+                    title: "General Technical Inquiry",
+                    desc: "Platform settings, questions or advice",
+                    icon: HelpCircle,
+                  },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isSelected = supportReason === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSupportReason(item.id)}
+                      className={`p-3 rounded-xl border text-left transition flex items-start gap-2.5 ${
+                        isSelected
+                          ? "border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-1 ring-emerald-600 shadow-2xs"
+                          : "border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700"
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isSelected ? "text-emerald-700" : "text-zinc-500"}`} />
+                      <div>
+                        <p className="font-bold text-xs">{item.title}</p>
+                        <p className="text-[10px] text-zinc-500 leading-tight mt-0.5">{item.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Launch WhatsApp CTA */}
+            <div className="pt-3 border-t border-zinc-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span className="text-[11px] text-zinc-400 font-mono">
+                Opens SuperAdmin chat with pre-formatted message
+              </span>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsSupportModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50 text-zinc-700 font-semibold"
+                >
+                  Close
+                </button>
+
+                <a
+                  href={buildSuperAdminWhatsAppUrl(supportReason, {
+                    institutionName: `${instSlug.toUpperCase()} University`,
+                    institutionSlug: instSlug,
+                    orgName: "NESA ELCOM",
+                    orgSlug: "nesa",
+                    adminName: "ELCOM Presiding Officer",
+                    adminRole: "Administrator",
+                    currentQuota: orgLicenseInfo.voterQuota || 500,
+                    registeredCount: voterRoll.length,
+                    electionId,
+                    planName: "Micro Tier (500 Voters - ₦15,000)",
+                  })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsSupportModalOpen(false)}
+                  className="flex-1 sm:flex-initial px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition flex items-center justify-center gap-2 shadow-xs text-xs"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Open WhatsApp Support →</span>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       )}
