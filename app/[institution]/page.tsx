@@ -4,20 +4,15 @@ import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { getInstitutionBySlug } from "@/lib/db/institutions";
 import { getElectionsByInstitution } from "@/lib/db/elections";
-import { lookupStudentStatusAction } from "@/app/actions/student-register";
 import {
   Vote,
-  BarChart3,
   Search,
   ArrowRight,
   ShieldCheck,
-  ShieldAlert,
-  Key,
   UserPlus,
   Building2,
   CheckCircle2,
   AlertCircle,
-  Plus,
   Lock,
 } from "lucide-react";
 
@@ -30,13 +25,7 @@ export default function CampusHubPage({
   const instSlug = (resolvedParams?.institution || "ui").toLowerCase();
   const [institution, setInstitution] = useState<any>(null);
   const [elections, setElections] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"ELECTIONS" | "CHECK_PIN" | "VERIFY_RECEIPT">("ELECTIONS");
-
-  // Student PIN & Status Lookup State
-  const [lookupMatric, setLookupMatric] = useState("");
-  const [isLookingUp, setIsLookingUp] = useState(false);
-  const [lookupResult, setLookupResult] = useState<any | null>(null);
-  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"ELECTIONS" | "VERIFY_RECEIPT">("ELECTIONS");
 
   useEffect(() => {
     async function loadData() {
@@ -47,28 +36,6 @@ export default function CampusHubPage({
     }
     loadData();
   }, [instSlug]);
-
-  const handleLookup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!lookupMatric.trim()) return;
-
-    setIsLookingUp(true);
-    setLookupError(null);
-    setLookupResult(null);
-
-    const res = await lookupStudentStatusAction({
-      institutionSlug: resolvedParams.institution,
-      matricNo: lookupMatric.trim(),
-    });
-
-    setIsLookingUp(false);
-
-    if (res.success && res.student) {
-      setLookupResult(res.student);
-    } else {
-      setLookupError(res.message || "Matriculation number not found.");
-    }
-  };
 
   if (!institution) {
     return (
@@ -102,15 +69,6 @@ export default function CampusHubPage({
 
         {/* Student-Focused Action Header */}
         <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-          <button
-            type="button"
-            onClick={() => setActiveTab("CHECK_PIN")}
-            className="px-3.5 py-2 rounded-lg border border-zinc-300 text-zinc-700 hover:bg-zinc-50 transition flex items-center gap-1.5 font-semibold"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-zinc-600" />
-            <span>Verify Voter Status</span>
-          </button>
-
           <button
             type="button"
             onClick={() => setActiveTab("ELECTIONS")}
@@ -174,19 +132,6 @@ export default function CampusHubPage({
         >
           <Vote className="w-4 h-4" />
           <span>Active Association Elections ({elections.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("CHECK_PIN")}
-          className={`px-4 py-2 rounded-lg transition flex items-center gap-1.5 ${
-            activeTab === "CHECK_PIN"
-              ? "bg-zinc-900 text-white shadow-xs"
-              : "text-zinc-600 hover:bg-zinc-100"
-          }`}
-        >
-          <Key className="w-4 h-4" />
-          <span>Lookup My PIN & Dues</span>
         </button>
 
         <button
@@ -309,127 +254,6 @@ export default function CampusHubPage({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* TAB 2: CHECK VOTER STATUS & CLEARANCE (SECURE / NO PUBLIC PIN)           */}
-      {/* ========================================================================= */}
-      {activeTab === "CHECK_PIN" && (
-        <div className="max-w-xl mx-auto space-y-6">
-          <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm space-y-4 text-xs">
-            <div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-zinc-900" />
-                <h2 className="text-base font-bold text-zinc-900">
-                  Student Voter Status & Accreditation Lookup
-                </h2>
-              </div>
-              <p className="text-zinc-500 text-xs mt-0.5">
-                Enter your matriculation number to verify your electoral enrollment and dues standing.
-              </p>
-            </div>
-
-            <form onSubmit={handleLookup} className="space-y-3">
-              <div>
-                <label className="block font-semibold uppercase text-zinc-700 mb-1">
-                  Matriculation / Registration Number
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 21/52HA045"
-                  value={lookupMatric}
-                  onChange={(e) => setLookupMatric(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-zinc-300 focus:ring-1 focus:ring-zinc-900 focus:outline-none uppercase font-mono text-sm"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLookingUp}
-                className="w-full py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white font-bold transition text-xs flex items-center justify-center gap-1.5 shadow-xs"
-              >
-                <Search className="w-3.5 h-3.5" />
-                <span>{isLookingUp ? "Checking Electoral Roll..." : "Verify Voter Status"}</span>
-              </button>
-            </form>
-
-            {lookupError && (
-              <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                <span>{lookupError}</span>
-              </div>
-            )}
-
-            {lookupResult && (
-              <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 space-y-4 pt-3">
-                <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
-                  <div>
-                    <h3 className="font-bold text-zinc-900 text-sm">{lookupResult.fullName}</h3>
-                    <span className="font-mono text-zinc-500 text-xs">{lookupResult.matricNo}</span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded bg-zinc-200 text-zinc-800 text-[10px] font-mono">
-                    {lookupResult.department} • {lookupResult.level}L
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <div className="p-2.5 rounded-lg bg-white border border-zinc-200 flex items-center justify-between">
-                    <span className="text-zinc-600 font-medium">Association Dues:</span>
-                    <span
-                      className={`font-bold px-2 py-0.5 rounded text-[10px] ${
-                        lookupResult.duesPaid
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-rose-100 text-rose-800"
-                      }`}
-                    >
-                      {lookupResult.duesPaid ? "✓ PAID" : "✗ UNPAID"}
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-white border border-zinc-200 flex items-center justify-between">
-                    <span className="text-zinc-600 font-medium">Ballot Access:</span>
-                    <span
-                      className={`font-bold px-2 py-0.5 rounded text-[10px] ${
-                        lookupResult.disciplinaryStatus === "GOOD_STANDING"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-rose-100 text-rose-800"
-                      }`}
-                    >
-                      {lookupResult.disciplinaryStatus === "GOOD_STANDING"
-                        ? "✓ CLEARED"
-                        : "✗ SUSPENDED"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Privacy & Anti-Impersonation Box */}
-                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-bold text-xs">
-                      <Lock className="w-3.5 h-3.5 text-amber-700" />
-                      <span>Voter PIN Security Shield</span>
-                    </div>
-                    <span className="font-mono text-xs font-bold bg-amber-200/70 px-2 py-0.5 rounded text-amber-950">
-                      {lookupResult.maskedPin || "PIN-••••-••••"}
-                    </span>
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-amber-800">
-                    <strong>Ballot Privacy Protected:</strong> To prevent third-party impersonation, access PINs are confidential and are never revealed on public lookup screens. Use the PIN you received upon profile activation or contact your ELCOM commissioner if you misplaced it.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("ELECTIONS")}
-                  className="w-full py-2.5 rounded-lg bg-zinc-900 text-white font-bold hover:bg-zinc-800 transition text-xs flex items-center justify-center gap-1.5 shadow-xs"
-                >
-                  <Vote className="w-3.5 h-3.5" />
-                  <span>Choose Association & Proceed to Vote →</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* TAB 3: VERIFY BALLOT RECEIPT */}

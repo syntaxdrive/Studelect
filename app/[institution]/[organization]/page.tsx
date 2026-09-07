@@ -61,7 +61,7 @@ export default function OrganizationPortalPage({
   }
 
   const [institution, setInstitution] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"VOTE" | "CANDIDATES" | "REGISTER" | "CHECK_PIN" | "RESULTS">("VOTE");
+  const [activeTab, setActiveTab] = useState<"VOTE" | "CANDIDATES" | "REGISTER" | "RESULTS">("VOTE");
 
   // Voting Booth State (LOGIN -> BALLOT -> REVIEW -> RECEIPT)
   const [voteStep, setVoteStep] = useState<"LOGIN" | "BALLOT" | "REVIEW" | "RECEIPT">("LOGIN");
@@ -117,11 +117,6 @@ export default function OrganizationPortalPage({
   const [regError, setRegError] = useState<string | null>(null);
   const [regSuccessPin, setRegSuccessPin] = useState<string | null>(null);
 
-  // PIN Lookup State
-  const [lookupMatric, setLookupMatric] = useState("");
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupResult, setLookupResult] = useState<any | null>(null);
-  const [lookupError, setLookupError] = useState<string | null>(null);
 
   // Dynamic Association Names
   const orgNames: { [key: string]: { name: string; type: string; title: string; dept: string } } = {
@@ -527,28 +522,6 @@ export default function OrganizationPortalPage({
     }
   };
 
-  // PIN Lookup
-  const handleLookup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!lookupMatric.trim()) return;
-
-    setLookupLoading(true);
-    setLookupError(null);
-    setLookupResult(null);
-
-    const res = await lookupStudentStatusAction({
-      institutionSlug: instSlug,
-      matricNo: lookupMatric.trim(),
-    });
-
-    setLookupLoading(false);
-
-    if (res.success && res.student) {
-      setLookupResult(res.student);
-    } else {
-      setLookupError(res.message || "Matriculation number not found.");
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -655,19 +628,6 @@ export default function OrganizationPortalPage({
         >
           <UserPlus className="w-4 h-4" />
           <span>New Voter? Get PIN</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("CHECK_PIN")}
-          className={`px-4 py-2 rounded-lg transition flex items-center gap-1.5 ${
-            activeTab === "CHECK_PIN"
-              ? "bg-zinc-900 text-white shadow-xs"
-              : "text-zinc-600 hover:bg-zinc-100"
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          <span>Verify Voter Status</span>
         </button>
 
         <button
@@ -785,13 +745,9 @@ export default function OrganizationPortalPage({
                       <label className="block font-semibold uppercase text-zinc-700 font-mono text-[11px]">
                         Portal PIN
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("CHECK_PIN")}
-                        className="text-[11px] text-zinc-500 hover:text-zinc-900 underline font-mono"
-                      >
-                        Forgot PIN? Lookup here
-                      </button>
+                      <span className="text-[10px] text-zinc-400 font-mono">
+                        Issued by ELCOM / on registration
+                      </span>
                     </div>
                     <input
                       type="password"
@@ -1517,7 +1473,7 @@ export default function OrganizationPortalPage({
 
                     {/* PIN recovery note */}
                     <div className="text-[11px] text-zinc-500 border-t border-zinc-100 pt-3">
-                      Lost your PIN? Use the <strong className="text-zinc-700">Lookup My PIN</strong> tab and enter your matric number to retrieve it instantly.
+                      Lost your PIN? Contact your ELCOM administrator or polling officer to reset and re-issue your PIN.
                     </div>
 
                     {/* Proceed CTA */}
@@ -1632,138 +1588,6 @@ export default function OrganizationPortalPage({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* TAB 3: CHECK VOTER STATUS & CLEARANCE (SECURE / NO PUBLIC PIN)           */}
-      {/* ========================================================================= */}
-      {activeTab === "CHECK_PIN" && (
-        <div className="max-w-xl mx-auto space-y-6">
-          <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm space-y-4 text-xs">
-            <div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-zinc-900" />
-                <h2 className="text-base font-bold text-zinc-900">
-                  Voter Verification & Status Lookup
-                </h2>
-              </div>
-              <p className="text-zinc-500 text-xs mt-0.5">
-                Verify your accreditation standing, dues clearance, and profile status for <strong>{currentOrg.name}</strong>.
-              </p>
-            </div>
-
-            <form onSubmit={handleLookup} className="space-y-3">
-              <div>
-                <label className="block font-semibold uppercase text-zinc-700 mb-1">
-                  Matriculation / Registration Number
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 21/52HA045"
-                  value={lookupMatric}
-                  onChange={(e) => setLookupMatric(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-zinc-300 focus:ring-1 focus:ring-zinc-900 focus:outline-none uppercase font-mono"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={lookupLoading}
-                className="w-full py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white font-bold transition text-xs flex items-center justify-center gap-1.5 shadow-xs"
-              >
-                <Search className="w-3.5 h-3.5" />
-                <span>{lookupLoading ? "Verifying Roster..." : "Verify Voter Status"}</span>
-              </button>
-            </form>
-
-            {lookupError && (
-              <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                <span>{lookupError}</span>
-              </div>
-            )}
-
-            {lookupResult && (
-              <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 space-y-4 pt-3">
-                <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
-                  <div>
-                    <h3 className="font-bold text-zinc-900 text-sm">{lookupResult.fullName}</h3>
-                    <span className="font-mono text-zinc-500">{lookupResult.matricNo}</span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded bg-zinc-200 text-zinc-800 text-[10px] font-mono">
-                    {lookupResult.department} • {lookupResult.level}L
-                  </span>
-                </div>
-
-                {/* Clearance Badges */}
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <div className="p-2.5 rounded-lg bg-white border border-zinc-200 flex items-center justify-between">
-                    <span className="text-zinc-600 font-medium">Association Dues:</span>
-                    <span
-                      className={`font-bold px-2 py-0.5 rounded text-[10px] ${
-                        lookupResult.duesPaid
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-rose-100 text-rose-800"
-                      }`}
-                    >
-                      {lookupResult.duesPaid ? "✓ PAID" : "✗ UNPAID"}
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-white border border-zinc-200 flex items-center justify-between">
-                    <span className="text-zinc-600 font-medium">Ballot Access:</span>
-                    <span
-                      className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase font-mono ${
-                        lookupResult.disciplinaryStatus === "GOOD_STANDING"
-                          ? "bg-zinc-100 text-zinc-900 border border-zinc-200"
-                          : "bg-rose-50 text-rose-800 border border-rose-200"
-                      }`}
-                    >
-                      {lookupResult.disciplinaryStatus === "GOOD_STANDING"
-                        ? "Cleared"
-                        : "Suspended"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Privacy & Anti-Impersonation Box */}
-                <div className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200 text-zinc-900 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-bold text-xs">
-                      <Lock className="w-3.5 h-3.5 text-zinc-700" />
-                      <span>Voter PIN Security Shield</span>
-                    </div>
-                    <span className="font-mono text-xs font-bold bg-zinc-200 px-2 py-0.5 rounded text-zinc-900">
-                      {lookupResult.maskedPin || "PIN-••••-••••"}
-                    </span>
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-zinc-600">
-                    <strong className="text-zinc-900">Ballot Privacy Protected:</strong> To prevent unauthorized voting by third parties, your full access PIN is never shown on public lookup screens. Use the PIN you received during registration or contact your ELCOM commissioner if you lost it.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMatricInput(lookupResult.matricNo);
-                    setActiveTab("VOTE");
-                    if (!authenticatedStudent) {
-                      setVoteStep("LOGIN");
-                    }
-                  }}
-                  className="w-full py-2.5 rounded-lg bg-zinc-900 text-white font-bold hover:bg-zinc-800 transition text-xs flex items-center justify-center gap-1.5 shadow-xs border border-zinc-900"
-                >
-                  <Vote className="w-3.5 h-3.5" />
-                  <span>
-                    {authenticatedStudent
-                      ? "Return to Active Ballot"
-                      : "Proceed to Polling Booth"}
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* TAB 4: LIVE RESULTS & STANDINGS                                          */}
