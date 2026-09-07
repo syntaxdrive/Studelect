@@ -6,12 +6,65 @@ import { getAdminSession } from "@/lib/auth/session";
 import { logoutAction } from "@/app/actions/auth";
 
 export const metadata: Metadata = {
-  title: "StudElect • Multi-Tenant Student Election Platform",
-  description: "Secure, verifiable digital elections for Nigerian tertiary institutions.",
+  metadataBase: new URL("https://studelect.ng"),
+  title: {
+    default: "StudElect • Secure Student Elections for Nigerian Universities",
+    template: "%s • StudElect",
+  },
+  description:
+    "StudElect is Nigeria's leading digital election platform for tertiary institutions. Cryptographically secure, constitutionally compliant student elections with real-time audit trails.",
+  keywords: [
+    "student elections Nigeria",
+    "university elections platform",
+    "ELCOM digital voting",
+    "student union election",
+    "SUG election software Nigeria",
+    "NESA NACOS election portal",
+    "secure student voting",
+    "Nigerian university election system",
+  ],
+  authors: [{ name: "StudElect", url: "https://studelect.ng" }],
+  creator: "StudElect Nigeria",
+  publisher: "StudElect Nigeria",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_NG",
+    url: "https://studelect.ng",
+    siteName: "StudElect",
+    title: "StudElect • Secure Student Elections for Nigerian Universities",
+    description:
+      "Nigeria's most trusted cryptographic student election platform. Multi-campus, multi-organisation, real-time results.",
+    images: [
+      {
+        url: "/studelect-logo.jpg",
+        width: 1200,
+        height: 630,
+        alt: "StudElect — Secure Student Elections",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "StudElect • Secure Student Elections",
+    description: "Nigeria's leading cryptographic student election platform.",
+    images: ["/studelect-logo.jpg"],
+    creator: "@studelect_ng",
+  },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
     apple: "/studelect-mark.jpg",
+  },
+  verification: {
+    google: "REPLACE_WITH_GOOGLE_SEARCH_CONSOLE_TOKEN",
+  },
+  alternates: {
+    canonical: "https://studelect.ng",
   },
 };
 
@@ -101,16 +154,57 @@ export default async function RootLayout({
         {/* Main Content */}
         <main className="flex-1">{children}</main>
 
-        {/* Minimalist Footer */}
-        <footer className="border-t border-zinc-200 bg-white py-8 text-center text-xs text-zinc-500 print:hidden">
-          <div className="max-w-7xl mx-auto px-4 space-y-2">
-            <div className="flex items-center justify-center gap-1.5 text-zinc-700 font-semibold">
-              <ShieldCheck className="w-4 h-4 text-zinc-800" />
-              <span>StudElect Nigeria • Multi-Tenant Student E-Voting Architecture</span>
+        {/* Footer */}
+        <footer className="border-t border-zinc-200 bg-white py-10 print:hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pb-8 border-b border-zinc-100">
+              {/* Brand */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <img src="/studelect-mark.jpg" alt="StudElect" className="h-7 w-7 rounded-md object-cover" />
+                  <span className="text-sm font-bold text-zinc-900">
+                    Stud<span className="text-blue-600">Elect</span>
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 leading-relaxed max-w-xs">
+                  Nigeria's cryptographically secure student election platform. Multi-campus. Real-time audit trails. Zero paper ballots.
+                </p>
+                <p className="text-[11px] text-zinc-400 font-mono">privacy@studelect.ng</p>
+              </div>
+
+              {/* Platform */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-700">Platform</h4>
+                <ul className="space-y-2 text-xs text-zinc-500">
+                  <li><Link href="/#campuses" className="hover:text-zinc-900 transition">Campuses</Link></li>
+                  <li><Link href="/pricing" className="hover:text-zinc-900 transition">Pricing Plans</Link></li>
+                  <li><Link href="/admin/login" className="hover:text-zinc-900 transition">ELCOM Sign In</Link></li>
+                  <li><Link href="/super-admin" className="hover:text-zinc-900 transition">Platform Admin</Link></li>
+                </ul>
+              </div>
+
+              {/* Legal */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-700">Legal &amp; Compliance</h4>
+                <ul className="space-y-2 text-xs text-zinc-500">
+                  <li><Link href="/legal/privacy" className="hover:text-zinc-900 transition">Privacy Policy</Link></li>
+                  <li><Link href="/legal/terms" className="hover:text-zinc-900 transition">Terms of Service</Link></li>
+                  <li><Link href="/legal/cookies" className="hover:text-zinc-900 transition">Cookie Policy</Link></li>
+                  <li><a href="mailto:legal@studelect.ng" className="hover:text-zinc-900 transition">Contact Legal</a></li>
+                </ul>
+              </div>
             </div>
-            <p className="text-zinc-400">
-              End-to-End Cryptographic Auditability & Constitutional Eligibility Screening
-            </p>
+
+            {/* Bottom bar */}
+            <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                <ShieldCheck className="w-3.5 h-3.5 text-zinc-600" />
+                <span>StudElect Nigeria &copy; {new Date().getFullYear()}. All rights reserved.</span>
+              </div>
+              <p className="text-[11px] text-zinc-400">
+                End-to-end cryptographic auditability &bull; Constitutional eligibility screening &bull; NDPR compliant
+              </p>
+            </div>
           </div>
         </footer>
       </body>
