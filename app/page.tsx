@@ -35,14 +35,6 @@ export default async function HomePage() {
       {/* SECTION 1: HERO & CORE IDENTITY */}
       {/* ========================================================================= */}
       <section className="max-w-5xl mx-auto px-4 text-center space-y-6 relative z-10">
-        <div className="flex justify-center mb-2">
-          <img
-            src="/studelect-logo.svg"
-            alt="StudElect Official Protocol Logo"
-            className="h-16 sm:h-20 w-auto object-contain drop-shadow-xs"
-          />
-        </div>
-
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-zinc-200 text-zinc-700 text-xs font-semibold shadow-xs">
           <span className="h-2 w-2 rounded-full bg-zinc-900" />
           <span>The Sovereign E-Voting Protocol for Higher Education</span>
